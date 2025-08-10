@@ -1,0 +1,7 @@
+[
+{"id":1,"title":"Elasticsearch入门指南","content":"这是一篇关于Elasticsearch基础概念的入门文章...","summary":"","tags":["Elasticsearch","搜索引擎","入门"],"category_id":0,"user_id":0,"status":1,"view_count":0,"like_count":0,"favorite_count":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z"},
+{"id":2,"title":"Go语言并发编程实践","content":"本文探讨了Go语言中goroutine和channel的使用技巧...","summary":"","tags":["Go","并发","编程技巧"],"category_id":0,"user_id":0,"status":1,"view_count":0,"like_count":0,"favorite_count":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z"},
+{"id":3,"title":"React组件设计模式","content":"深入讨论React应用中常见的组件设计模式...","summary":"","tags":["React","组件设计","前端架构"],"category_id":0,"user_id":0,"status":1,"view_count":0,"like_count":0,"favorite_count":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z"},
+{"id":4,"title":"微服务架构最佳实践","content":"分享在大型微服务项目中的经验教训...","summary":"","tags":["微服务","分布式","架构设计"],"category_id":0,"user_id":0,"status":0,"view_count":0,"like_count":0,"favorite_count":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z"},
+{"id":5,"title":"机器学习模型部署指南","content":"详细介绍如何将训练好的机器学习模型部署到生产环境...","summary":"","tags":["机器学习","部署","Docker"],"category_id":0,"user_id":0,"status":1,"view_count":0,"like_count":0,"favorite_count":0,"created_at":"0001-01-01T00:00:00Z","updated_at":"0001-01-01T00:00:00Z"}
+]

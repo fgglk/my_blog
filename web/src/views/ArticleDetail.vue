@@ -1,0 +1,2397 @@
+<template>
+  <div class="article-detail">
+    <!-- 导航栏 -->
+    <header class="header">
+      <div class="container">
+        <div class="header-content">
+          <div class="logo">
+            <router-link to="/" class="logo-link">
+              <h1>我的博客</h1>
+            </router-link>
+          </div>
+          <nav class="nav">
+            <router-link to="/" class="nav-item">首页</router-link>
+            <router-link to="/search" class="nav-item">搜索</router-link>
+            <template v-if="userStore.userInfo">
+              <router-link to="/write" class="nav-item">写文章</router-link>
+              <router-link to="/profile" class="nav-item">个人中心</router-link>
+              <el-button @click="handleLogout" link>退出</el-button>
+            </template>
+            <template v-else>
+              <router-link to="/login" class="nav-item">登录</router-link>
+              <router-link to="/register" class="nav-item">注册</router-link>
+            </template>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="main">
+      <div class="container">
+        <div v-if="articleStore.loading" class="loading">
+          <el-skeleton :rows="10" animated />
+        </div>
+        
+        <div v-else-if="!articleStore.currentArticle" class="empty">
+          <el-empty description="文章不存在" />
+        </div>
+        
+        <div v-else class="content">
+          <!-- 文章内容区域 -->
+          <div class="article-container">
+            <!-- 文章主体 -->
+            <article class="article">
+              <div class="article-header">
+                <!-- 封面图片 -->
+                <div v-if="articleStore.currentArticle.cover_image" class="article-cover">
+                  <img 
+                    :src="articleStore.currentArticle.cover_image" 
+                    :alt="articleStore.currentArticle.title"
+                    class="cover-image"
+                  />
+                </div>
+                
+                <!-- 分类和阅读时间 -->
+                <div class="article-meta-top">
+                  <div class="category-info">
+                    <el-icon class="category-icon"><Document /></el-icon>
+                    <span class="category-name">{{ articleStore.currentArticle.category.name }}</span>
+                  </div>
+                  <div class="read-time">
+                    <el-icon class="time-icon"><Clock /></el-icon>
+                    <span>{{ getReadTime(articleStore.currentArticle.content) }}分钟阅读</span>
+                  </div>
+                </div>
+                
+                <!-- 文章标题 -->
+                <h1 class="article-title">{{ articleStore.currentArticle.title }}</h1>
+                
+                <!-- 作者信息 -->
+                <div class="author-section">
+                  <div class="author-info">
+                    <el-avatar :size="40" class="author-avatar" :src="articleStore.currentArticle.author_avatar">
+                      {{ articleStore.currentArticle.author_name.charAt(0) }}
+                    </el-avatar>
+                    <div class="author-details">
+                      <span class="author-name">{{ articleStore.currentArticle.author_name }}</span>
+                      <el-tag size="small" type="primary" class="author-tag">作者</el-tag>
+                    </div>
+                    <span class="publish-date">发布于 {{ formatDate(articleStore.currentArticle.created_at) }}</span>
+                  </div>
+
+                </div>
+                
+                <!-- 文章标签 -->
+                <div class="article-tags">
+                  <el-tag 
+                    v-for="tag in articleStore.currentArticle.tags" 
+                    :key="tag.id"
+                    size="small"
+                    class="tag"
+                    type="info"
+                    effect="light"
+                  >
+                    #{{ tag.name }}
+                  </el-tag>
+                </div>
+              </div>
+              
+              <div class="article-content">
+                <div class="markdown-content" v-html="renderedContent"></div>
+              </div>
+              
+              <div class="article-actions">
+                <div class="action-buttons">
+                  <!-- 编辑按钮（仅作者或管理员可见） -->
+                  <el-button 
+                    v-if="canEditArticle"
+                    type="success"
+                    @click="goToEdit"
+                    size="large"
+                    class="action-btn edit-btn"
+                  >
+                    <el-icon><Edit /></el-icon>
+                    编辑文章
+                  </el-button>
+                  
+                  <el-button 
+                    :type="articleStore.currentArticle.is_liked ? 'primary' : 'default'"
+                    @click="handleLike"
+                    :loading="likeLoading"
+                    size="large"
+                    class="action-btn like-btn"
+                  >
+                    <el-icon><Star /></el-icon>
+                    {{ articleStore.currentArticle.is_liked ? '已点赞' : '点赞' }}
+                    ({{ articleStore.currentArticle.like_count }})
+                  </el-button>
+                  
+                  <el-button 
+                    :type="articleStore.currentArticle.is_favorited ? 'warning' : 'default'"
+                    @click="handleFavorite"
+                    :loading="favoriteLoading"
+                    size="large"
+                    class="action-btn favorite-btn"
+                  >
+                    <el-icon><Collection /></el-icon>
+                    {{ articleStore.currentArticle.is_favorited ? '已收藏' : '收藏' }}
+                    ({{ articleStore.currentArticle.favorite_count }})
+                  </el-button>
+
+                  <el-button 
+                    type="info"
+                    @click="handleShare"
+                    size="large"
+                    class="action-btn share-btn"
+                  >
+                    <el-icon><Link /></el-icon>
+                    分享
+                  </el-button>
+                </div>
+              </div>
+            </article>
+
+            <!-- 侧边栏 -->
+            <aside class="sidebar">
+              <!-- 文章数据卡片 -->
+              <div class="data-card">
+                <h3 class="card-title">文章数据</h3>
+                <div class="stats-grid">
+                  <div class="stat-box">
+                    <span class="stat-number primary">{{ articleStore.currentArticle.view_count }}</span>
+                    <span class="stat-label">阅读数</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="stat-number">{{ articleStore.currentArticle.comment_count }}</span>
+                    <span class="stat-label">评论数</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="stat-number">{{ articleStore.currentArticle.like_count }}</span>
+                    <span class="stat-label">点赞数</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="stat-number">{{ articleStore.currentArticle.favorite_count }}</span>
+                    <span class="stat-label">收藏数</span>
+                  </div>
+                </div>
+                <div class="article-info">
+                  <div class="info-item">
+                    <span class="info-label">发布时间</span>
+                    <span class="info-value">{{ formatDateShort(articleStore.currentArticle.created_at) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">最后更新</span>
+                    <span class="info-value">{{ formatDateShort(articleStore.currentArticle.updated_at) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">文章字数</span>
+                    <span class="info-value">{{ getWordCount(articleStore.currentArticle.content) }}字</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 目录导航 -->
+              <div class="toc-card">
+                <h3 class="card-title">
+                  <el-icon><Document /></el-icon>
+                  文章目录
+                </h3>
+                <div class="toc-content">
+                  <div 
+                    class="toc-item" 
+                    v-for="(heading, index) in tocItems" 
+                    :key="index"
+                    :class="`toc-level-${heading.level}`"
+                  >
+                    <a 
+                      :href="`#${heading.id}`" 
+                      class="toc-link"
+                      :class="{ 
+                        active: activeHeading === heading.id,
+                        [`level-${heading.level}`]: true
+                      }"
+                    >
+                      <span class="toc-bullet">{{ '•'.repeat(heading.level) }}</span>
+                      <span class="toc-text">{{ heading.text }}</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <!-- 相关文章 -->
+          <div class="related-articles-section" :class="{ 'empty-section': relatedArticles.length === 0 }">
+            <div class="section-header">
+              <h3 class="section-title">
+                <el-icon><Link /></el-icon>
+                相关文章
+              </h3>
+            </div>
+            <div class="related-articles-list">
+              <div v-if="relatedArticles.length === 0" class="empty">
+                <div class="empty-content">
+                  <el-icon class="empty-icon"><Box /></el-icon>
+                  <p class="empty-text">暂无相关文章</p>
+                </div>
+              </div>
+              <div v-else>
+                <article 
+                  v-for="article in relatedArticles" 
+                  :key="article.id" 
+                  class="related-article-card"
+                  @click="goToArticle(article.id)"
+                >
+                  <div class="article-image">
+                    <img :src="getArticleImage(article)" alt="文章配图" />
+                  </div>
+                  <div class="article-content">
+                    <div class="article-meta">
+                      <el-tag size="small" type="primary">{{ article.category.name }}</el-tag>
+                      <span class="article-date">{{ formatDate(article.created_at) }}</span>
+                      <div class="article-stats">
+                        <span class="stat-item">
+                          <el-icon><View /></el-icon>
+                          {{ article.view_count }} 浏览
+                        </span>
+                        <span class="stat-item">
+                          <el-icon><ChatDotRound /></el-icon>
+                          {{ article.comment_count }} 评论
+                        </span>
+                        <span class="stat-item">
+                          <el-icon><Star /></el-icon>
+                          {{ article.like_count }} 点赞
+                        </span>
+                        <span class="stat-item">
+                          <el-icon><Collection /></el-icon>
+                          {{ article.favorite_count }} 收藏
+                        </span>
+                      </div>
+                    </div>
+                    <h3 class="article-title">{{ article.title }}</h3>
+                    <p class="article-summary">{{ getArticleSummary(article.content) }}</p>
+                    <div class="article-footer">
+                      <div class="author">
+                        <el-avatar :size="24" :src="article.author_avatar">
+                          {{ article.author_name?.charAt(0) || 'U' }}
+                        </el-avatar>
+                        <span>{{ article.author_name }}</span>
+                      </div>
+                      <router-link :to="`/article/${article.id}`" class="read-more">
+                        阅读全文 →
+                      </router-link>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <!-- 评论区 -->
+          <div class="comments-section">
+            <div class="comments-header">
+              <h3 class="comments-title">
+                <el-icon><ChatDotRound /></el-icon>
+                评论 ({{ articleStore.currentArticle.comment_count }})
+              </h3>
+            </div>
+            
+            <!-- 发表评论 -->
+            <div v-if="userStore.userInfo" class="comment-form">
+              <div class="comment-input-wrapper">
+                <el-avatar :size="48" class="comment-avatar">
+                  {{ userStore.userInfo?.username.charAt(0) || 'U' }}
+                </el-avatar>
+                <div class="comment-input-content">
+                  <el-input
+                    v-model="commentContent"
+                    type="textarea"
+                    :rows="3"
+                    placeholder="写下你的评论..."
+                    maxlength="500"
+                    show-word-limit
+                    class="comment-textarea"
+                  />
+                  <div class="comment-actions">
+                    <el-button 
+                      type="primary" 
+                      @click="submitComment"
+                      :loading="commentLoading"
+                      :disabled="!commentContent.trim()"
+                      size="small"
+                      class="submit-btn"
+                    >
+                      发表评论
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="login-prompt">
+              <el-button type="primary" @click="$router.push('/login')" size="large" class="login-btn">
+                <el-icon><User /></el-icon>
+                登录后发表评论
+              </el-button>
+            </div>
+            
+            <!-- 评论列表 -->
+            <div class="comments-list">
+              <div v-if="comments.length === 0" class="no-comments">
+                <el-empty description="暂无评论，快来抢沙发吧！" />
+              </div>
+              <div v-else>
+                <CommentItem 
+                  v-for="comment in comments" 
+                  :key="comment.id"
+                  :comment="comment"
+                  :user-store="userStore"
+                  :comment-api="commentApi"
+                  :article-id="parseInt(route.params.id as string)"
+                  :article-author-id="articleStore.currentArticle?.author_id"
+                  @comment-updated="handleCommentUpdated"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { useArticleStore } from '@/stores/article'
+import { commentApi } from '@/api/comment'
+import { articleApi } from '@/api/article'
+import { ElMessage } from 'element-plus'
+import { 
+  View, ChatDotRound, Star, Collection, Document, Link, User, Clock, Box, Edit
+} from '@element-plus/icons-vue'
+import dayjs from 'dayjs'
+import MarkdownIt from 'markdown-it'
+import type { Comment } from '@/types/comment'
+import type { Article } from '@/types/article'
+import CommentItem from '@/components/CommentItem.vue'
+import { getPlainTextSummary } from '@/utils/markdown'
+
+const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
+const articleStore = useArticleStore()
+
+const commentContent = ref('')
+const commentLoading = ref(false)
+const likeLoading = ref(false)
+const favoriteLoading = ref(false)
+const comments = ref<Comment[]>([])
+const relatedArticles = ref<Article[]>([])
+const activeHeading = ref('')
+
+// Markdown渲染器
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true
+})
+
+// 渲染文章内容
+const renderedContent = computed(() => {
+  if (!articleStore.currentArticle) return ''
+  return md.render(articleStore.currentArticle.content)
+})
+
+// 修复图片样式的方法
+const fixImageStyles = () => {
+  // 使用nextTick确保DOM已更新
+  nextTick(() => {
+    // 只选择文章内容中的图片，排除头像
+    const images = document.querySelectorAll('.markdown-content img:not(.el-avatar img)')
+    images.forEach((img: Element) => {
+      const htmlImg = img as HTMLImageElement
+      // 检查是否是头像组件内的图片
+      if (!htmlImg.closest('.el-avatar')) {
+        htmlImg.style.maxWidth = 'calc(100% - 40px)'
+        htmlImg.style.margin = '20px 20px'
+        htmlImg.style.display = 'block'
+        htmlImg.style.borderRadius = '12px'
+        htmlImg.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)'
+        htmlImg.style.transition = 'all 0.3s ease'
+        htmlImg.style.objectFit = 'contain'
+        htmlImg.style.height = 'auto'
+        htmlImg.style.width = 'auto'
+      }
+    })
+  })
+}
+
+// 生成目录
+const tocItems = computed(() => {
+  if (!articleStore.currentArticle) return []
+  
+  const headings: { id: string; text: string; level: number }[] = []
+  const content = articleStore.currentArticle.content
+  
+  // 简单的标题提取逻辑
+  const lines = content.split('\n')
+  lines.forEach((line, index) => {
+    const match = line.match(/^(#{1,6})\s+(.+)$/)
+    if (match) {
+      const level = match[1].length
+      const text = match[2].trim()
+      const id = `heading-${index}`
+      headings.push({ id, text, level })
+    }
+  })
+  
+  return headings
+})
+
+// 格式化日期
+const formatDate = (date: string) => {
+  return dayjs(date).format('YYYY-MM-DD HH:mm')
+}
+
+// 格式化日期（短）
+const formatDateShort = (date: string) => {
+  return dayjs(date).format('YYYY-MM-DD')
+}
+
+// 获取阅读时间
+const getReadTime = (content: string) => {
+  const words = content.split(/\s+/).filter(word => word.length > 0)
+  const averageReadingSpeed = 200 // 平均每分钟阅读200字
+  const readTime = Math.ceil(words.length / averageReadingSpeed)
+  return readTime > 0 ? readTime : 1
+}
+
+// 获取文章字数
+const getWordCount = (content: string) => {
+  if (!content) return 0
+  // 移除HTML标签
+  const cleanContent = content.replace(/<[^>]*>/g, '')
+  // 移除Markdown语法
+  const markdownFree = cleanContent.replace(/[#*`~\[\]()!]/g, '')
+  // 统计中文字符和英文单词
+  const chineseChars = (markdownFree.match(/[\u4e00-\u9fa5]/g) || []).length
+  const englishWords = markdownFree.split(/\s+/).filter(word => /[a-zA-Z]/.test(word)).length
+  return chineseChars + englishWords
+}
+
+// 加载文章详情
+const loadArticle = async () => {
+  const articleId = parseInt(route.params.id as string)
+  if (isNaN(articleId)) {
+    ElMessage.error('文章ID无效')
+    router.push('/')
+    return
+  }
+  
+  await articleStore.getArticle(articleId)
+  await loadComments(articleId)
+  await loadRelatedArticles(articleId)
+  
+  // 文章加载完成后修复图片样式
+  fixImageStyles()
+}
+
+// 加载相关文章
+const loadRelatedArticles = async (articleId: number) => {
+  try {
+    const response = await articleApi.getArticleList({
+      page: 1,
+      size: 5,
+      categoryId: articleStore.currentArticle?.category_id
+    })
+    if (response.code === 0) {
+      relatedArticles.value = (response.data.list || []).filter(article => article.id !== articleId)
+    } else {
+      console.error('加载相关文章失败:', response.msg)
+      relatedArticles.value = []
+    }
+  } catch (error) {
+    console.error('加载相关文章失败:', error)
+    relatedArticles.value = []
+  }
+}
+
+// 加载评论
+const loadComments = async (articleId: number) => {
+  try {
+    const response = await commentApi.getCommentList(articleId, { page: 1, size: 50 })
+    if (response.code === 0) {
+      comments.value = response.data.list || []
+    } else {
+      console.error('评论加载失败:', response.msg)
+      comments.value = []
+    }
+  } catch (error) {
+    console.error('加载评论失败:', error)
+    comments.value = []
+  }
+}
+
+// 处理评论更新（包括删除、创建等操作后）
+const handleCommentUpdated = async () => {
+  const articleId = parseInt(route.params.id as string)
+  await loadComments(articleId)
+  // 重新加载文章信息以更新评论数
+  await articleStore.getArticle(articleId)
+}
+
+// 提交评论
+const submitComment = async () => {
+  // 检查用户是否已登录
+  if (!userStore.userInfo) {
+    if (userStore.getCurrentToken()) {
+      try {
+        await userStore.getUserInfo()
+        if (!userStore.userInfo) {
+          ElMessage.warning('登录已过期，请重新登录')
+          router.push('/login')
+          return
+        }
+      } catch (error) {
+        ElMessage.warning('登录已过期，请重新登录')
+        router.push('/login')
+        return
+      }
+    } else {
+      ElMessage.warning('请先登录')
+      router.push('/login')
+      return
+    }
+  }
+  
+  if (!commentContent.value.trim()) {
+    ElMessage.warning('请输入评论内容')
+    return
+  }
+  
+  commentLoading.value = true
+  try {
+    const articleId = parseInt(route.params.id as string)
+    
+    const commentData = {
+      content: commentContent.value,
+      article_id: articleId
+    }
+    
+    // 检查token是否存在
+    const currentToken = userStore.getCurrentToken()
+    if (!currentToken) {
+      ElMessage.error('登录状态异常，请重新登录')
+      router.push('/login')
+      return
+    }
+    
+    const response = await commentApi.createComment(commentData)
+    
+    if (response.code === 0) {
+      ElMessage.success('评论发表成功')
+      commentContent.value = ''
+      await handleCommentUpdated()
+    } else {
+      ElMessage.error(response.msg || '评论发表失败')
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      ElMessage.error(`评论发表失败: ${error.message}`)
+    } else {
+      ElMessage.error('评论发表失败')
+    }
+  } finally {
+    commentLoading.value = false
+  }
+}
+
+// 点赞
+const handleLike = async () => {
+  if (!userStore.userInfo) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  
+  likeLoading.value = true
+  try {
+    const articleId = parseInt(route.params.id as string)
+    const result = await articleStore.toggleLike(articleId)
+    if (result.success) {
+      ElMessage.success('操作成功')
+    } else {
+      ElMessage.error(result.message || '操作失败')
+    }
+  } catch (error) {
+    console.error('点赞失败:', error)
+    ElMessage.error('操作失败')
+  } finally {
+    likeLoading.value = false
+  }
+}
+
+// 收藏
+const handleFavorite = async () => {
+  if (!userStore.userInfo) {
+    ElMessage.warning('请先登录')
+    return
+  }
+  
+  favoriteLoading.value = true
+  try {
+    const articleId = parseInt(route.params.id as string)
+    const result = await articleStore.toggleFavorite(articleId)
+    if (result.success) {
+      ElMessage.success('操作成功')
+    } else {
+      ElMessage.error(result.message || '操作失败')
+    }
+  } catch (error) {
+    ElMessage.error('操作失败')
+  } finally {
+    favoriteLoading.value = false
+  }
+}
+
+// 分享
+const handleShare = () => {
+  const url = window.location.href
+  const title = articleStore.currentArticle?.title || '文章'
+  
+  if (navigator.share) {
+    navigator.share({
+      title,
+      url
+    })
+  } else {
+    // 复制链接到剪贴板
+    navigator.clipboard.writeText(url).then(() => {
+      ElMessage.success('链接已复制到剪贴板')
+    }).catch(() => {
+      ElMessage.error('复制失败')
+    })
+  }
+}
+
+// 跳转到文章
+const goToArticle = (articleId: number) => {
+  router.push(`/article/${articleId}`)
+}
+
+// 获取文章摘要
+const getArticleSummary = (content: string) => {
+  return getPlainTextSummary(content, 140)
+}
+
+// 获取文章配图
+const getArticleImage = (article: Article) => {
+  // 如果文章有封面图片，使用封面图片
+  if (article.cover_image) {
+    return article.cover_image
+  }
+  // 否则使用占位图片
+  return `https://picsum.photos/300/200?random=${article.id}`
+}
+
+// 检查是否可以编辑文章
+const canEditArticle = computed(() => {
+  if (!userStore.userInfo || !articleStore.currentArticle) return false
+  
+  // 检查是否为文章作者
+  const isAuthor = userStore.userInfo.id === articleStore.currentArticle.author_id
+  
+  // TODO: 如果有管理员角色判断，可以在这里添加
+  // const isAdmin = userStore.userInfo.role === 'admin'
+  
+  return isAuthor
+})
+
+// 跳转到编辑页面
+const goToEdit = () => {
+  if (!articleStore.currentArticle) return
+  router.push(`/write/${articleStore.currentArticle.id}`)
+}
+
+// 退出登录
+const handleLogout = async () => {
+  userStore.logout()
+  ElMessage.success('退出成功')
+  router.push('/')
+}
+
+// 监听滚动更新目录
+const handleScroll = () => {
+  const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6')
+  let currentHeading = ''
+  
+  headings.forEach((heading) => {
+    const rect = heading.getBoundingClientRect()
+    if (rect.top <= 100) {
+      currentHeading = heading.id
+    }
+  })
+  
+  activeHeading.value = currentHeading
+}
+
+
+
+// 监听渲染内容变化
+watch(renderedContent, () => {
+  fixImageStyles()
+}, { flush: 'post' })
+
+// 组件挂载时加载数据
+onMounted(async () => {
+  // 确保用户状态已初始化
+  if (userStore.getCurrentToken() && !userStore.userInfo) {
+    await userStore.getUserInfo()
+  }
+
+  await loadArticle()
+  
+  // 监听滚动事件以更新目录
+  window.addEventListener('scroll', handleScroll)
+  
+  // 延时修复图片样式，确保DOM完全渲染
+  setTimeout(() => {
+    fixImageStyles()
+  }, 500)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+</script>
+
+<style lang="scss" scoped>
+.article-detail {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 0;
+}
+
+.logo-link {
+  text-decoration: none;
+  
+  h1 {
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 24px;
+    font-weight: bold;
+  }
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-item {
+  text-decoration: none;
+  color: #333;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  padding: 8px 16px;
+  border-radius: 20px;
+  
+  &:hover {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+  }
+  
+  &.router-link-active {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    font-weight: bold;
+  }
+}
+
+.main {
+  padding: 20px 0;
+}
+
+.loading, .empty {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+.content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+// 文章容器
+.article-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 30px;
+  align-items: start;
+  max-width: 100%;
+  overflow: hidden;
+  
+  @media (max-width: 1200px) {
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 25px;
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+}
+
+// 文章主体
+.article {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  padding: 50px 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  min-height: 600px;
+  transition: all 0.3s ease;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  
+  // 全局图片样式重置 - 排除头像
+  img:not(.el-avatar img) {
+    max-width: calc(100% - 40px) !important;
+    margin: 20px 20px !important;
+    display: block !important;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    object-fit: contain !important;
+    height: auto !important;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 35px 25px;
+  }
+  
+  &:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #8b5cf6 100%);
+  }
+  
+  h1.article-title {
+    font-size: 42px;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin: 30px 0;
+    line-height: 1.3;
+    background: linear-gradient(135deg, #1a1a1a 0%, #374151 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    
+    @media (max-width: 768px) {
+      font-size: 28px;
+      text-align: left;
+    }
+  }
+}
+
+.article-header {
+  margin-bottom: 50px;
+}
+
+// 封面图片样式
+.article-cover {
+  margin-bottom: 30px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  position: relative;
+  max-width: 100%;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+  }
+  
+  &:hover::before {
+    opacity: 1;
+  }
+  
+  .cover-image {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    display: block;
+    max-width: 100%;
+  }
+  
+  &:hover .cover-image {
+    transform: scale(1.02);
+  }
+  
+  @media (max-width: 768px) {
+    margin-bottom: 25px;
+    
+    .cover-image {
+      height: 200px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .cover-image {
+      height: 180px;
+    }
+  }
+}
+
+.article-meta-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.category-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3b82f6;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.05);
+  padding: 8px 12px;
+  border-radius: 15px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.category-icon {
+  font-size: 18px;
+}
+
+.read-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  background: rgba(107, 114, 128, 0.05);
+  padding: 8px 12px;
+  border-radius: 15px;
+  border: 1px solid rgba(107, 114, 128, 0.1);
+}
+
+.time-icon {
+  font-size: 16px;
+}
+
+.author-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 25px;
+  padding-top: 25px;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.author-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(59, 130, 246, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  }
+}
+
+.author-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.8);
+}
+
+.author-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.author-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.author-tag {
+  font-size: 12px;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.publish-date {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+
+
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.tag {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+  
+  .article-content {
+    font-size: 18px;
+    line-height: 1.8;
+    color: #1a1a1a;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    max-width: 100%;
+    overflow: hidden;
+    
+    .markdown-content {
+      font-size: 18px;
+      line-height: 1.8;
+      color: #1a1a1a;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      max-width: 100%;
+      overflow: hidden;
+      
+      // 强制重置文章图片样式，排除头像
+      img:not(.el-avatar img) {
+        max-width: calc(100% - 40px) !important;
+        width: auto !important;
+        height: auto !important;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        margin: 20px 20px !important;
+        transition: all 0.3s ease;
+        display: block !important;
+        box-sizing: border-box !important;
+        object-fit: contain;
+        
+        &:hover {
+          transform: scale(1.02);
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        // 移动端响应式处理，确保两侧空白对称
+        @media (max-width: 768px) {
+          max-width: calc(100% - 30px) !important;
+          margin: 15px 15px !important;
+        }
+        
+        @media (max-width: 480px) {
+          max-width: calc(100% - 20px) !important;
+          margin: 10px 10px !important;
+        }
+      }
+      
+      h1, h2, h3, h4, h5, h6 {
+        margin-top: 40px;
+        margin-bottom: 20px;
+        color: #1a1a1a;
+        font-weight: 700;
+        line-height: 1.3;
+        
+        &:first-child {
+          margin-top: 0;
+        }
+      }
+      
+      h1 {
+        font-size: 32px;
+        border-bottom: 3px solid rgba(59, 130, 246, 0.2);
+        padding-bottom: 10px;
+      }
+      
+      h2 {
+        font-size: 28px;
+        border-bottom: 2px solid rgba(59, 130, 246, 0.15);
+        padding-bottom: 8px;
+      }
+      
+      h3 {
+        font-size: 24px;
+      }
+      
+      h4 {
+        font-size: 20px;
+      }
+      
+      p {
+        margin-bottom: 20px;
+        line-height: 1.8;
+        color: #374151;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+      
+      ul, ol {
+        margin-left: 25px;
+        margin-bottom: 20px;
+        padding-left: 20px;
+      }
+      
+      li {
+        margin-bottom: 10px;
+        line-height: 1.7;
+        color: #374151;
+      }
+      
+      blockquote {
+        margin: 25px 0;
+        padding: 20px 25px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+        border-left: 5px solid #3b82f6;
+        border-radius: 8px;
+        color: #374151;
+        font-style: italic;
+        font-size: 16px;
+        line-height: 1.7;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+      }
+      
+      code {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.9em;
+        color: #dc2626;
+        font-weight: 600;
+        border: 1px solid rgba(220, 38, 38, 0.1);
+      }
+      
+      pre {
+        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        color: #f9fafb;
+        padding: 25px;
+        border-radius: 12px;
+        overflow-x: auto;
+        font-size: 14px;
+        line-height: 1.6;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        
+        code {
+          background: none;
+          color: inherit;
+          padding: 0;
+          border: none;
+        }
+      }
+      
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+        font-size: 16px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      
+      th, td {
+        border: 1px solid #e5e7eb;
+        padding: 15px 20px;
+        text-align: left;
+      }
+      
+      th {
+        background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+        color: #fff;
+        font-weight: 700;
+        font-size: 16px;
+      }
+      
+      td {
+        background: #fff;
+        color: #374151;
+      }
+      
+      tr:nth-child(even) td {
+        background: #f9fafb;
+      }
+      
+      hr {
+        border: none;
+        border-top: 2px dashed rgba(59, 130, 246, 0.3);
+        margin: 30px 0;
+      }
+      
+      strong {
+        font-weight: 700;
+        color: #1a1a1a;
+      }
+      
+      em {
+        font-style: italic;
+        color: #6b7280;
+      }
+      
+      a {
+        color: #3b82f6;
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          color: #1d4ed8;
+          border-bottom-color: #3b82f6;
+        }
+      }
+    }
+  }
+}
+
+.article-actions {
+  border-top: 2px solid rgba(59, 130, 246, 0.1);
+  padding-top: 40px;
+  
+  .action-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .action-btn {
+    border-radius: 30px;
+    padding: 15px 30px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 140px;
+    justify-content: center;
+    
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+    
+    .el-icon {
+      font-size: 18px;
+    }
+  }
+
+  .like-btn {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+      border-color: rgba(59, 130, 246, 0.5);
+      color: #1d4ed8;
+    }
+    
+    &.el-button--primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+      border-color: #3b82f6;
+      color: #fff;
+      
+      &:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%);
+        border-color: #1d4ed8;
+      }
+    }
+  }
+
+  .favorite-btn {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%);
+    border: 2px solid rgba(255, 193, 7, 0.3);
+    color: #f59e0b;
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%);
+      border-color: rgba(255, 193, 7, 0.5);
+      color: #d97706;
+    }
+    
+    &.el-button--warning {
+      background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+      border-color: #f59e0b;
+      color: #fff;
+      
+      &:hover {
+        background: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+        border-color: #d97706;
+      }
+    }
+  }
+
+  .edit-btn {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%);
+    border: 2px solid rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.2) 100%);
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #16a34a;
+    }
+    
+    &.el-button--success {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      border-color: #22c55e;
+      color: #fff;
+      
+      &:hover {
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        border-color: #16a34a;
+      }
+    }
+  }
+
+  .share-btn {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    color: #8b5cf6;
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+      border-color: rgba(139, 92, 246, 0.5);
+      color: #7c3aed;
+    }
+  }
+}
+
+// 侧边栏
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.data-card, .toc-card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #8b5cf6 100%);
+  }
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 25px;
+  
+  .el-icon {
+    font-size: 24px;
+    color: #3b82f6;
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.stat-box {
+  text-align: center;
+  padding: 15px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1;
+  display: block;
+  margin-bottom: 5px;
+  
+  &.primary {
+    color: #3b82f6;
+  }
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.article-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.info-label {
+  color: #6b7280;
+}
+
+.info-value {
+  color: #1a1a1a;
+}
+
+.toc-content {
+  .toc-item {
+    margin-bottom: 8px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    // 根据层级设置缩进和样式
+    &.toc-level-1 {
+      margin-left: 0;
+    }
+    
+    &.toc-level-2 {
+      margin-left: 12px;
+    }
+    
+    &.toc-level-3 {
+      margin-left: 24px;
+    }
+    
+    &.toc-level-4 {
+      margin-left: 36px;
+    }
+    
+    &.toc-level-5 {
+      margin-left: 48px;
+    }
+    
+    &.toc-level-6 {
+      margin-left: 60px;
+    }
+  }
+  
+  .toc-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    color: #6b7280;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    line-height: 1.4;
+    border: 1px solid transparent;
+    position: relative;
+    
+    // 层级样式区分
+    &.level-1 {
+      font-size: 15px;
+      font-weight: 600;
+      padding: 10px 14px;
+      
+      .toc-bullet {
+        color: #3b82f6;
+        font-weight: bold;
+      }
+    }
+    
+    &.level-2 {
+      font-size: 14px;
+      font-weight: 500;
+      
+      .toc-bullet {
+        color: #06b6d4;
+      }
+    }
+    
+    &.level-3 {
+      font-size: 13px;
+      font-weight: 400;
+      
+      .toc-bullet {
+        color: #8b5cf6;
+      }
+    }
+    
+    &.level-4 {
+      font-size: 12px;
+      font-weight: 400;
+      
+      .toc-bullet {
+        color: #f59e0b;
+      }
+    }
+    
+    &.level-5, &.level-6 {
+      font-size: 11px;
+      font-weight: 400;
+      
+      .toc-bullet {
+        color: #10b981;
+      }
+    }
+    
+    .toc-bullet {
+      font-size: 8px;
+      line-height: 1;
+      min-width: 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .toc-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    &:hover {
+      color: #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+      border-color: rgba(59, 130, 246, 0.1);
+      transform: translateX(4px);
+      
+      .toc-bullet {
+        color: #3b82f6;
+        transform: scale(1.2);
+      }
+    }
+    
+    &.active {
+      color: #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.2);
+      font-weight: 600;
+      
+      .toc-bullet {
+        color: #3b82f6;
+        transform: scale(1.3);
+      }
+      
+      &::before {
+        content: '';
+        position: absolute;
+        left: -4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 60%;
+        background: #3b82f6;
+        border-radius: 1.5px;
+      }
+    }
+  }
+}
+
+.related-list {
+  .related-item {
+    padding: 20px;
+    margin-bottom: 15px;
+    background: rgba(102, 126, 234, 0.03);
+    border-radius: 16px;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: rgba(102, 126, 234, 0.08);
+      border-color: rgba(102, 126, 234, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15);
+    }
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .related-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    
+    .related-meta {
+      display: flex;
+      gap: 15px;
+      font-size: 13px;
+      color: #6b7280;
+      
+      span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+    }
+  }
+}
+
+/* 相关文章样式 */
+.related-articles-section {
+  margin-top: 60px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  
+  /* 当没有相关文章时，缩小模块 */
+  &.empty-section {
+    padding: 20px;
+    margin-top: 30px;
+    
+    .section-header {
+      margin-bottom: 15px;
+      
+      .section-title {
+        font-size: 20px;
+        
+        .el-icon {
+          font-size: 18px;
+        }
+      }
+    }
+  }
+  
+  .section-header {
+    margin-bottom: 30px;
+    
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a202c;
+      margin: 0;
+      
+      .el-icon {
+        font-size: 24px;
+        color: #3b82f6;
+      }
+    }
+  }
+  
+  .related-articles-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 20px;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      border: 1px dashed rgba(59, 130, 246, 0.3);
+      
+      .empty-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        
+        .empty-icon {
+          font-size: 32px;
+          color: #cbd5e0;
+        }
+        
+        .empty-text {
+          margin: 0;
+          color: #718096;
+          font-size: 14px;
+        }
+      }
+    }
+    
+    .related-article-card {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      
+      &:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        border-color: rgba(59, 130, 246, 0.3);
+      }
+      
+      .article-image {
+        height: 160px;
+        overflow: hidden;
+        position: relative;
+        
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s ease;
+        }
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+      }
+      
+      &:hover .article-image {
+        img {
+          transform: scale(1.05);
+        }
+        
+        &::before {
+          opacity: 1;
+        }
+      }
+      
+      .article-content {
+        padding: 20px;
+        
+        .article-meta {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+          
+          .el-tag {
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 6px 12px;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+          }
+          
+          .article-date {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+          }
+          
+                      .article-stats {
+              display: flex;
+              gap: 8px;
+              margin-left: auto;
+              
+              .stat-item {
+                display: flex;
+                align-items: center;
+                gap: 3px;
+                font-size: 11px;
+                color: #64748b;
+                font-weight: 500;
+                
+                .el-icon {
+                  font-size: 12px;
+                  color: #94a3b8;
+                }
+              }
+            }
+        }
+        
+                .article-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #1a202c;
+          margin: 0 0 10px 0;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .article-summary {
+          color: #64748b;
+          line-height: 1.6;
+          margin: 0 0 15px 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        
+        .article-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          
+                      .author {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              
+              .el-avatar {
+                border: 2px solid rgba(255, 255, 255, 0.8);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+              }
+              
+              span {
+                font-size: 13px;
+                font-weight: 600;
+                color: #374151;
+              }
+            }
+          
+          .read-more {
+            color: #3b82f6;
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: rgba(59, 130, 246, 0.1);
+            
+            &:hover {
+              background: rgba(59, 130, 246, 0.2);
+              transform: translateX(4px);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 评论区
+.comments-section {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 60px;
+  margin-top: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  }
+}
+
+.comments-header {
+  margin-bottom: 30px;
+  
+  .comments-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    
+    .el-icon {
+      color: #3b82f6;
+    }
+  }
+}
+
+.comment-form {
+  margin-bottom: 40px;
+  
+  .comment-input-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 25px;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 15px;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+  }
+  
+  .comment-input-content {
+    flex: 1;
+  }
+  
+  .comment-textarea {
+    margin-bottom: 15px;
+    
+    :deep(.el-textarea__inner) {
+      border-radius: 12px;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      font-size: 16px;
+      line-height: 1.6;
+      padding: 15px;
+      transition: all 0.3s ease;
+      
+      &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      }
+    }
+  }
+  
+  .comment-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .submit-btn {
+    border-radius: 25px;
+    padding: 12px 24px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    cursor: pointer;
+
+    &:hover {
+      background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+      box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+    }
+  }
+
+  .login-btn {
+    border-radius: 25px;
+    padding: 12px 24px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+
+    &:hover {
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+      box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+    }
+  }
+}
+
+.login-prompt {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 40px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-radius: 20px;
+  border: 2px dashed rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+}
+
+.comments-list {
+  .no-comments {
+    text-align: center;
+    padding: 40px 0;
+  }
+}
+
+
+
+// 响应式设计
+@media (max-width: 1200px) {
+  .content {
+    max-width: 100%;
+    padding: 0 15px;
+  }
+  
+  .article-container {
+    grid-template-columns: 1fr 220px;
+    gap: 25px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .content {
+    padding: 0 10px;
+  }
+  
+  .article-container {
+    grid-template-columns: 1fr 200px;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 900px) {
+  .article-container {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  
+  .sidebar {
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 0 8px;
+  }
+  
+  .article {
+    padding: 30px 20px;
+  }
+  
+  .article-title {
+    font-size: 28px;
+  }
+  
+  .article-meta-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .category-info, .read-time {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .author-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+
+
+  .data-card {
+    padding: 25px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-box {
+    padding: 12px;
+  }
+
+  .stat-number {
+    font-size: 22px;
+  }
+
+  .article-info {
+    padding-top: 15px;
+  }
+
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .info-label {
+    width: 100%;
+    text-align: center;
+  }
+
+  .comments-section {
+    padding: 30px 20px;
+  }
+  
+  .comment-form {
+    .comment-input-wrapper {
+      padding: 15px;
+      gap: 12px;
+    }
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .action-btn {
+    width: 100%;
+    max-width: 250px;
+  }
+  
+  .related-articles-section {
+    padding: 25px 20px;
+    
+    .section-title {
+      font-size: 24px;
+    }
+    
+    .related-articles-list {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    
+    .related-article-card {
+      .article-content {
+        padding: 20px;
+      }
+      
+      .article-title {
+        font-size: 18px;
+      }
+      
+      .article-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: 0 5px;
+  }
+  
+  .article {
+    padding: 25px;
+  }
+  
+  .article-title {
+    font-size: 28px;
+  }
+  
+  .data-card {
+    padding: 25px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .stat-box {
+    padding: 12px;
+  }
+
+  .stat-number {
+    font-size: 22px;
+  }
+
+  .comments-section {
+    padding: 25px;
+  }
+  
+  .comment-form {
+    .comment-input-wrapper {
+      padding: 15px;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .comment-avatar {
+      margin-bottom: 10px;
+    }
+  }
+  
+  .action-buttons {
+    gap: 8px;
+  }
+  
+  .action-btn {
+    max-width: 100%;
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+  
+  .related-articles-section {
+    padding: 20px;
+    margin-top: 40px;
+    
+    .section-title {
+      font-size: 22px;
+    }
+    
+    .related-articles-list {
+      gap: 15px;
+    }
+    
+    .related-article-card {
+      .article-image {
+        height: 150px;
+      }
+      
+      .article-content {
+        padding: 15px;
+      }
+      
+      .article-title {
+        font-size: 16px;
+      }
+      
+      .article-summary {
+        font-size: 14px;
+      }
+      
+      .article-meta {
+        .article-stats {
+          display: none;
+        }
+      }
+    }
+  }
+}
+</style>
