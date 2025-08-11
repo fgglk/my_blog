@@ -710,8 +710,8 @@ onUnmounted(() => {
 .hero-stats {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  flex-wrap: wrap;
+  gap: 20px;
+  flex-wrap: nowrap;
   margin-top: 40px;
   animation: fadeInUp 1s ease-out 0.6s both;
 }
@@ -1180,7 +1180,17 @@ onUnmounted(() => {
   }
   
   .hero-stats {
-    gap: 20px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .stat-item {
+    font-size: 14px;
+    padding: 8px 12px;
+    
+    .el-icon {
+      font-size: 16px;
+    }
   }
   
   .subscribe-content {

@@ -512,10 +512,7 @@ const showCommentsSection = computed(() => {
   return articleReadingSettings.value.allowComments
 })
 
-// 是否显示评论表单（已废弃，直接在模板中使用条件）
-const showCommentForm = computed(() => {
-  return articleReadingSettings.value.allowComments && userStore.userInfo
-})
+
 
 // 是否需要登录才能查看
 const requireLoginToView = computed(() => {
@@ -1612,8 +1609,8 @@ onUnmounted(() => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
   margin-bottom: 25px;
 }
 
@@ -2397,7 +2394,7 @@ onUnmounted(() => {
   }
 
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 
