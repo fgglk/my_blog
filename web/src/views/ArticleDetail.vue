@@ -38,8 +38,18 @@
         </div>
         
         <div v-else class="content">
+          <!-- 登录提示 -->
+          <div v-if="requireLoginToView" class="login-required">
+            <el-empty description="此文章需要登录后才能查看">
+              <el-button type="primary" @click="$router.push('/login')" size="large">
+                <el-icon><User /></el-icon>
+                立即登录
+              </el-button>
+            </el-empty>
+          </div>
+          
           <!-- 文章内容区域 -->
-          <div class="article-container">
+          <div v-else class="article-container">
             <!-- 文章主体 -->
             <article class="article">
               <div class="article-header">
@@ -289,7 +299,7 @@
           </div>
 
           <!-- 评论区 -->
-          <div class="comments-section">
+          <div v-if="showCommentsSection" class="comments-section">
             <div class="comments-header">
               <h3 class="comments-title">
                 <el-icon><ChatDotRound /></el-icon>
@@ -298,7 +308,7 @@
             </div>
             
             <!-- 发表评论 -->
-            <div v-if="userStore.userInfo" class="comment-form">
+            <div v-if="showCommentForm" class="comment-form">
               <div class="comment-input-wrapper">
                 <el-avatar :size="48" class="comment-avatar">
                   {{ userStore.userInfo?.username.charAt(0) || 'U' }}
@@ -329,11 +339,17 @@
               </div>
             </div>
             
-            <div v-else class="login-prompt">
+            <div v-else-if="requireLoginToView" class="login-prompt">
               <el-button type="primary" @click="$router.push('/login')" size="large" class="login-btn">
                 <el-icon><User /></el-icon>
                 登录后发表评论
               </el-button>
+            </div>
+            
+            <div v-else-if="!articleReadingSettings.allowComments" class="comments-disabled">
+              <el-empty description="评论功能已关闭">
+                <p class="disabled-message">作者已关闭此文章的评论功能</p>
+              </el-empty>
             </div>
             
             <!-- 评论列表 -->
@@ -375,7 +391,7 @@ import {
 import dayjs from 'dayjs'
 import MarkdownIt from 'markdown-it'
 import type { Comment } from '@/types/comment'
-import type { Article } from '@/types/article'
+import type { Article, ReadingSettings } from '@/types/article'
 import CommentItem from '@/components/CommentItem.vue'
 import { getPlainTextSummary } from '@/utils/markdown'
 
@@ -428,6 +444,61 @@ const fixImageStyles = () => {
     })
   })
 }
+
+// 解析阅读设置
+const parseReadingSettings = (summary: string): ReadingSettings => {
+  const defaultSettings: ReadingSettings = {
+    allowComments: true,
+    allowRepost: true,
+    requireLogin: false
+  }
+  
+  if (!summary) return defaultSettings
+  
+  const settingsMatch = summary.match(/<!--READ_SETTINGS:({.*?})-->/)
+  if (settingsMatch) {
+    try {
+      const settings = JSON.parse(settingsMatch[1])
+      return {
+        allowComments: settings.allowComments ?? true,
+        allowRepost: settings.allowRepost ?? true,
+        requireLogin: settings.requireLogin ?? false
+      }
+    } catch (error) {
+      console.error('解析阅读设置失败:', error)
+      return defaultSettings
+    }
+  }
+  
+  return defaultSettings
+}
+
+// 文章阅读设置
+const articleReadingSettings = computed(() => {
+  if (!articleStore.currentArticle?.summary) {
+    return {
+      allowComments: true,
+      allowRepost: true,
+      requireLogin: false
+    }
+  }
+  return parseReadingSettings(articleStore.currentArticle.summary)
+})
+
+// 是否显示评论区
+const showCommentsSection = computed(() => {
+  return articleReadingSettings.value.allowComments
+})
+
+// 是否显示评论表单
+const showCommentForm = computed(() => {
+  return articleReadingSettings.value.allowComments && userStore.userInfo
+})
+
+// 是否需要登录才能查看
+const requireLoginToView = computed(() => {
+  return articleReadingSettings.value.requireLogin && !userStore.userInfo
+})
 
 // 生成目录
 const tocItems = computed(() => {
@@ -2140,13 +2211,57 @@ onUnmounted(() => {
   }
 }
 
-.comments-list {
-  .no-comments {
-    text-align: center;
-    padding: 40px 0;
+  .comments-list {
+    .no-comments {
+      text-align: center;
+      padding: 40px 0;
+    }
+  }
+
+
+// 登录提示样式
+.login-required {
+  text-align: center;
+  padding: 60px 20px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  
+  .el-empty {
+    .el-empty__description {
+      font-size: 18px;
+      color: #374151;
+      margin-bottom: 20px;
+    }
   }
 }
 
+// 评论禁用样式
+.comments-disabled {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  
+  .el-empty {
+    .el-empty__description {
+      font-size: 16px;
+      color: #6b7280;
+      margin-bottom: 15px;
+    }
+  }
+  
+  .disabled-message {
+    font-size: 14px;
+    color: #9ca3af;
+    margin: 0;
+  }
+}
 
 
 // 响应式设计

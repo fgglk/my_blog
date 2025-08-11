@@ -1,8 +1,16 @@
+// 阅读设置接口
+export interface ReadingSettings {
+  allowComments: boolean
+  allowRepost: boolean
+  requireLogin: boolean
+}
+
 // 文章接口
 export interface Article {
   id: number
   title: string
   content: string
+  summary?: string // 用于存储阅读设置
   category_id: number
   category: Category
   tags: Tag[]
@@ -47,6 +55,7 @@ export interface ArticleListResponse {
 export interface CreateArticleRequest {
   title: string
   content: string
+  summary?: string // 用于存储阅读设置
   category_id: number
   tags: number[]
   status: number

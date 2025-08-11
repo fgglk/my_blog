@@ -218,7 +218,34 @@
               </div>
             </div>
 
-
+            <!-- 阅读设置 -->
+            <div class="sidebar-card">
+              <h3 class="card-title">阅读设置</h3>
+              <p class="card-subtitle">控制文章的阅读权限和交互</p>
+              <div class="reading-settings">
+                <div class="setting-item">
+                  <el-switch
+                    v-model="readingSettings.allowComments"
+                    active-text="允许评论"
+                    size="large"
+                  />
+                </div>
+                <div class="setting-item">
+                  <el-switch
+                    v-model="readingSettings.allowRepost"
+                    active-text="允许转载"
+                    size="large"
+                  />
+                </div>
+                <div class="setting-item">
+                  <el-switch
+                    v-model="readingSettings.requireLogin"
+                    active-text="需要登录"
+                    size="large"
+                  />
+                </div>
+              </div>
+            </div>
 
             <!-- 统计信息 -->
             <div class="sidebar-card">
@@ -397,7 +424,7 @@ import { articleApi } from '@/api/article'
 import { categoryApi } from '@/api/category'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import type { Category } from '@/types/article'
+import type { Category, ReadingSettings } from '@/types/article'
 import MarkdownIt from 'markdown-it'
 import {
   House, Search, Edit, Bell, ArrowDown, Link, Message, Collection,
@@ -435,6 +462,13 @@ const articleForm = reactive({
 })
 
 const publishStatus = ref('draft')
+
+// 阅读设置
+const readingSettings = reactive<ReadingSettings>({
+  allowComments: true,
+  allowRepost: true,
+  requireLogin: false
+})
 
 const articleRules: FormRules = {
   title: [
@@ -487,7 +521,47 @@ const getReadTime = (content: string) => {
   return readTime || 1
 }
 
+// 解析阅读设置
+const parseReadingSettings = (summary: string): ReadingSettings => {
+  const defaultSettings: ReadingSettings = {
+    allowComments: true,
+    allowRepost: true,
+    requireLogin: false
+  }
+  
+  if (!summary) return defaultSettings
+  
+  const settingsMatch = summary.match(/<!--READ_SETTINGS:({.*?})-->/)
+  if (settingsMatch) {
+    try {
+      const settings = JSON.parse(settingsMatch[1])
+      return {
+        allowComments: settings.allowComments ?? true,
+        allowRepost: settings.allowRepost ?? true,
+        requireLogin: settings.requireLogin ?? false
+      }
+    } catch (error) {
+      console.error('解析阅读设置失败:', error)
+      return defaultSettings
+    }
+  }
+  
+  return defaultSettings
+}
 
+
+
+// 编码阅读设置到摘要
+const encodeReadingSettings = (summary: string, settings: ReadingSettings): string => {
+  const settingsJson = JSON.stringify(settings)
+  const settingsTag = `<!--READ_SETTINGS:${settingsJson}-->`
+  
+  // 移除现有的设置标签
+  const cleanSummary = summary.replace(/<!--READ_SETTINGS:.*?-->/, '').trim()
+  
+  // 添加新的设置标签
+  return cleanSummary ? `${cleanSummary}\n\n${settingsTag}` : settingsTag
+}
 
 // 插入 Markdown 语法
 const insertMarkdown = (before: string, after: string) => {
@@ -655,9 +729,13 @@ const saveDraft = async () => {
            .map(tag => tag.trim())
            .filter(tag => tag.length > 0)
          
+         // 编码阅读设置到摘要字段
+         const summaryWithSettings = encodeReadingSettings('', readingSettings)
+         
          const articleData = {
            title: articleForm.title.trim(),
            content: articleForm.content,
+           summary: summaryWithSettings, // 包含阅读设置的摘要
            category_id: articleForm.categoryId || 3, // 使用选中的分类ID，默认为3（技术）
            tag_names: tagNames, // 发送标签名称数组
            cover_image: articleForm.coverImage, // 添加封面图片
@@ -709,9 +787,13 @@ const publishArticle = async () => {
        .map(tag => tag.trim())
        .filter(tag => tag.length > 0)
      
+     // 编码阅读设置到摘要字段
+     const summaryWithSettings = encodeReadingSettings('', readingSettings)
+     
      const articleData = {
        title: articleForm.title.trim(),
        content: articleForm.content,
+       summary: summaryWithSettings, // 包含阅读设置的摘要
        category_id: articleForm.categoryId || 3, // 使用选中的分类ID，默认为3（技术）
        tag_names: tagNames, // 发送标签名称数组
        cover_image: articleForm.coverImage, // 添加封面图片
@@ -785,8 +867,14 @@ const loadArticle = async () => {
       articleForm.tags = article.tags.map(tag => tag.name).join(',')
       articleForm.coverImage = article.cover_image || null
       publishStatus.value = article.is_published ? 'publish' : 'draft'
-
-
+      
+      // 解析阅读设置
+      if (article.summary) {
+        const settings = parseReadingSettings(article.summary)
+        readingSettings.allowComments = settings.allowComments
+        readingSettings.allowRepost = settings.allowRepost
+        readingSettings.requireLogin = settings.requireLogin
+      }
     }
   } catch (error) {
     ElMessage.error('加载文章失败')
@@ -1100,6 +1188,107 @@ onUnmounted(() => {
   gap: 12px;
 }
 
+.reading-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  
+  .setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f2f5;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    :deep(.el-switch) {
+      .el-switch__label {
+        font-size: 14px;
+        color: #374151 !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+      }
+      
+      .el-switch__core {
+        background-color: #e5e7eb !important;
+        border-color: #d1d5db !important;
+        transition: all 0.3s ease !important;
+        width: 50px !important;
+        height: 24px !important;
+        
+        &.is-checked {
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2), 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+        }
+        
+        .el-switch__action {
+          transition: all 0.3s ease !important;
+          width: 20px !important;
+          height: 20px !important;
+          background-color: #ffffff !important;
+          border-radius: 50% !important;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+          
+          &.is-checked {
+            background-color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+            transform: translateX(26px) !important;
+          }
+        }
+      }
+      
+      &.is-checked {
+        .el-switch__label {
+          color: #3b82f6 !important;
+          font-weight: 600 !important;
+          text-shadow: 0 0 1px rgba(59, 130, 246, 0.1) !important;
+        }
+      }
+      
+      &:hover {
+        .el-switch__core {
+          &.is-checked {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+          }
+        }
+      }
+    }
+    
+        // 额外的强制样式，确保开关按钮变蓝
+    :deep(.el-switch.is-checked) {
+      .el-switch__core {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+        border-color: #3b82f6 !important;
+      }
+      
+      .el-switch__action {
+        background-color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+      }
+    }
+    
+    // 全局覆盖 Element Plus 的开关样式
+    :deep(.el-switch) {
+      &.is-checked {
+        .el-switch__core {
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+          border-color: #3b82f6 !important;
+        }
+        
+        .el-switch__action {
+          background-color: #ffffff !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+      }
+    }
+  }
+}
+
 .switch-group {
   display: flex;
   flex-direction: column;
@@ -1139,6 +1328,36 @@ onUnmounted(() => {
   .action-btn {
     flex: 1;
     margin-bottom: 0;
+    transition: all 0.3s ease;
+    
+    &.el-button--primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      
+      &:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        border-color: #2563eb;
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        transform: translateY(-1px);
+      }
+      
+      &:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      }
+    }
+    
+    &.el-button--default {
+      border-color: #d1d5db;
+      color: #374151;
+      
+      &:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+        background-color: rgba(59, 130, 246, 0.05);
+      }
+    }
   }
 }
 
@@ -1536,6 +1755,63 @@ onUnmounted(() => {
     
     .action-btn {
       width: 100%;
+      transition: all 0.3s ease;
+      
+      &.el-button--primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        
+        &:hover {
+          background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+          border-color: #2563eb;
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+          transform: translateY(-1px);
+        }
+        
+        &:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+      }
+      
+      &.el-button--default {
+        border-color: #d1d5db;
+        color: #374151;
+        
+        &:hover {
+          border-color: #3b82f6;
+          color: #3b82f6;
+          background-color: rgba(59, 130, 246, 0.05);
+        }
+      }
+    }
+  }
+}
+
+// 全局覆盖 Element Plus 开关样式
+:deep(.el-switch.is-checked) {
+  .el-switch__core {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+    border-color: #3b82f6 !important;
+  }
+  
+  .el-switch__action {
+    background-color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  }
+}
+
+:deep(.el-switch) {
+  &.is-checked {
+    .el-switch__core {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+      border-color: #3b82f6 !important;
+    }
+    
+    .el-switch__action {
+      background-color: #ffffff !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
     }
   }
 }
