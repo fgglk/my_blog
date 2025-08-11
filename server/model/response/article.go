@@ -12,6 +12,7 @@ type ArticleResponse struct {
 	ID            uint           `json:"id"`
 	Title         string         `json:"title"`
 	Content       string         `json:"content"`
+	Summary       string         `json:"summary"`
 	CategoryID    uint           `json:"category_id"`
 	Category      CategorySimple `json:"category"`
 	Tags          []TagResponse  `json:"tags"`
@@ -106,6 +107,7 @@ func ToArticleResponse(article database.Article, category database.Category, tag
 		ID:         article.ID,
 		Title:      article.Title,
 		Content:    article.Content,
+		Summary:    article.Summary,
 		CategoryID: article.CategoryID,
 		Category: CategorySimple{
 			ID:   category.ID,

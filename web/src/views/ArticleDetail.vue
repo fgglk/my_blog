@@ -78,7 +78,7 @@
                 <h1 class="article-title">{{ articleStore.currentArticle.title }}</h1>
                 
                 <!-- 作者信息 -->
-                <div class="author-section">
+                <div v-if="showAuthorSection" class="author-section">
                   <div class="author-info">
                     <el-avatar :size="40" class="author-avatar" :src="articleStore.currentArticle.author_avatar">
                       {{ articleStore.currentArticle.author_name.charAt(0) }}
@@ -107,7 +107,19 @@
                 </div>
               </div>
               
-              <div class="article-content">
+              <!-- 登录检查 -->
+              <div v-if="requireLoginToView" class="login-required">
+                <div class="login-required-content">
+                  <el-icon class="login-icon"><Lock /></el-icon>
+                  <h3>需要登录才能查看</h3>
+                  <p>此文章需要登录后才能查看完整内容</p>
+                  <el-button type="primary" @click="goToLogin" size="large">
+                    立即登录
+                  </el-button>
+                </div>
+              </div>
+              
+              <div v-else class="article-content">
                 <div class="markdown-content" v-html="renderedContent"></div>
               </div>
               
@@ -150,6 +162,7 @@
                   </el-button>
 
                   <el-button 
+                    v-if="showShareButtons"
                     type="info"
                     @click="handleShare"
                     size="large"
@@ -202,7 +215,7 @@
               </div>
 
               <!-- 目录导航 -->
-              <div class="toc-card">
+              <div v-if="showTOC" class="toc-card">
                 <h3 class="card-title">
                   <el-icon><Document /></el-icon>
                   文章目录
@@ -308,7 +321,7 @@
             </div>
             
             <!-- 发表评论 -->
-            <div v-if="showCommentForm" class="comment-form">
+            <div v-if="articleReadingSettings.allowComments && userStore.userInfo" class="comment-form">
               <div class="comment-input-wrapper">
                 <el-avatar :size="48" class="comment-avatar">
                   {{ userStore.userInfo?.username.charAt(0) || 'U' }}
@@ -339,7 +352,7 @@
               </div>
             </div>
             
-            <div v-else-if="requireLoginToView" class="login-prompt">
+            <div v-else-if="articleReadingSettings.allowComments && !userStore.userInfo" class="login-prompt">
               <el-button type="primary" @click="$router.push('/login')" size="large" class="login-btn">
                 <el-icon><User /></el-icon>
                 登录后发表评论
@@ -386,7 +399,7 @@ import { commentApi } from '@/api/comment'
 import { articleApi } from '@/api/article'
 import { ElMessage } from 'element-plus'
 import { 
-  View, ChatDotRound, Star, Collection, Document, Link, User, Clock, Box, Edit
+  View, ChatDotRound, Star, Collection, Document, Link, User, Clock, Box, Edit, Lock
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import MarkdownIt from 'markdown-it'
@@ -450,19 +463,26 @@ const parseReadingSettings = (summary: string): ReadingSettings => {
   const defaultSettings: ReadingSettings = {
     allowComments: true,
     allowRepost: true,
-    requireLogin: false
+    requireLogin: false,
+    showAuthorInfo: true,
+    enableTOC: true
   }
   
-  if (!summary) return defaultSettings
+  if (!summary) {
+    return defaultSettings
+  }
   
   const settingsMatch = summary.match(/<!--READ_SETTINGS:({.*?})-->/)
+  
   if (settingsMatch) {
     try {
       const settings = JSON.parse(settingsMatch[1])
       return {
         allowComments: settings.allowComments ?? true,
         allowRepost: settings.allowRepost ?? true,
-        requireLogin: settings.requireLogin ?? false
+        requireLogin: settings.requireLogin ?? false,
+        showAuthorInfo: settings.showAuthorInfo ?? true,
+        enableTOC: settings.enableTOC ?? true
       }
     } catch (error) {
       console.error('解析阅读设置失败:', error)
@@ -479,7 +499,9 @@ const articleReadingSettings = computed(() => {
     return {
       allowComments: true,
       allowRepost: true,
-      requireLogin: false
+      requireLogin: false,
+      showAuthorInfo: true,
+      enableTOC: true
     }
   }
   return parseReadingSettings(articleStore.currentArticle.summary)
@@ -490,7 +512,7 @@ const showCommentsSection = computed(() => {
   return articleReadingSettings.value.allowComments
 })
 
-// 是否显示评论表单
+// 是否显示评论表单（已废弃，直接在模板中使用条件）
 const showCommentForm = computed(() => {
   return articleReadingSettings.value.allowComments && userStore.userInfo
 })
@@ -498,6 +520,21 @@ const showCommentForm = computed(() => {
 // 是否需要登录才能查看
 const requireLoginToView = computed(() => {
   return articleReadingSettings.value.requireLogin && !userStore.userInfo
+})
+
+// 是否显示分享按钮
+const showShareButtons = computed(() => {
+  return articleReadingSettings.value.allowRepost
+})
+
+// 是否显示作者信息
+const showAuthorSection = computed(() => {
+  return articleReadingSettings.value.showAuthorInfo
+})
+
+// 是否显示目录
+const showTOC = computed(() => {
+  return articleReadingSettings.value.enableTOC && tocItems.value.length > 0
 })
 
 // 生成目录
@@ -784,6 +821,11 @@ const canEditArticle = computed(() => {
 const goToEdit = () => {
   if (!articleStore.currentArticle) return
   router.push(`/write/${articleStore.currentArticle.id}`)
+}
+
+// 跳转到登录页面
+const goToLogin = () => {
+  router.push('/login')
 }
 
 // 退出登录
@@ -1570,8 +1612,8 @@ onUnmounted(() => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
   margin-bottom: 25px;
 }
 
@@ -2219,24 +2261,7 @@ onUnmounted(() => {
   }
 
 
-// 登录提示样式
-.login-required {
-  text-align: center;
-  padding: 60px 20px;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  
-  .el-empty {
-    .el-empty__description {
-      font-size: 18px;
-      color: #374151;
-      margin-bottom: 20px;
-    }
-  }
-}
+
 
 // 评论禁用样式
 .comments-disabled {
@@ -2299,6 +2324,42 @@ onUnmounted(() => {
   }
 }
 
+// 登录检查样式
+.login-required {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 16px;
+  margin: 30px 0;
+  
+  .login-required-content {
+    text-align: center;
+    padding: 40px;
+    
+    .login-icon {
+      font-size: 64px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    
+    h3 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 12px;
+    }
+    
+    p {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .content {
     padding: 0 8px;
@@ -2336,7 +2397,7 @@ onUnmounted(() => {
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 

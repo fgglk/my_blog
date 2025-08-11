@@ -233,7 +233,7 @@
                 <div class="setting-item">
                   <el-switch
                     v-model="readingSettings.allowRepost"
-                    active-text="允许转载"
+                    active-text="允许转载/分享"
                     size="large"
                   />
                 </div>
@@ -241,6 +241,20 @@
                   <el-switch
                     v-model="readingSettings.requireLogin"
                     active-text="需要登录"
+                    size="large"
+                  />
+                </div>
+                <div class="setting-item">
+                  <el-switch
+                    v-model="readingSettings.showAuthorInfo"
+                    active-text="显示作者信息"
+                    size="large"
+                  />
+                </div>
+                <div class="setting-item">
+                  <el-switch
+                    v-model="readingSettings.enableTOC"
+                    active-text="启用目录"
                     size="large"
                   />
                 </div>
@@ -467,7 +481,9 @@ const publishStatus = ref('draft')
 const readingSettings = reactive<ReadingSettings>({
   allowComments: true,
   allowRepost: true,
-  requireLogin: false
+  requireLogin: false,
+  showAuthorInfo: true,
+  enableTOC: true
 })
 
 const articleRules: FormRules = {
@@ -526,26 +542,40 @@ const parseReadingSettings = (summary: string): ReadingSettings => {
   const defaultSettings: ReadingSettings = {
     allowComments: true,
     allowRepost: true,
-    requireLogin: false
+    requireLogin: false,
+    showAuthorInfo: true,
+    enableTOC: true
   }
   
-  if (!summary) return defaultSettings
+  console.log('Write.vue - 解析阅读设置 - 原始摘要:', summary)
+  
+  if (!summary) {
+    console.log('Write.vue - 没有摘要，使用默认设置:', defaultSettings)
+    return defaultSettings
+  }
   
   const settingsMatch = summary.match(/<!--READ_SETTINGS:({.*?})-->/)
+  console.log('Write.vue - 设置匹配结果:', settingsMatch)
+  
   if (settingsMatch) {
     try {
       const settings = JSON.parse(settingsMatch[1])
-      return {
+      const result = {
         allowComments: settings.allowComments ?? true,
         allowRepost: settings.allowRepost ?? true,
-        requireLogin: settings.requireLogin ?? false
+        requireLogin: settings.requireLogin ?? false,
+        showAuthorInfo: settings.showAuthorInfo ?? true,
+        enableTOC: settings.enableTOC ?? true
       }
+      console.log('Write.vue - 解析成功，设置:', result)
+      return result
     } catch (error) {
-      console.error('解析阅读设置失败:', error)
+      console.error('Write.vue - 解析阅读设置失败:', error)
       return defaultSettings
     }
   }
   
+  console.log('Write.vue - 未找到设置标签，使用默认设置:', defaultSettings)
   return defaultSettings
 }
 
@@ -800,7 +830,7 @@ const publishArticle = async () => {
        status: 1 // 发布文章时总是设置为已发布状态
      }
      
-     // 调试信息
+     
      
     
     let result
@@ -868,13 +898,15 @@ const loadArticle = async () => {
       articleForm.coverImage = article.cover_image || null
       publishStatus.value = article.is_published ? 'publish' : 'draft'
       
-      // 解析阅读设置
-      if (article.summary) {
-        const settings = parseReadingSettings(article.summary)
-        readingSettings.allowComments = settings.allowComments
-        readingSettings.allowRepost = settings.allowRepost
-        readingSettings.requireLogin = settings.requireLogin
-      }
+              // 解析阅读设置
+        if (article.summary) {
+          const settings = parseReadingSettings(article.summary)
+          readingSettings.allowComments = settings.allowComments
+          readingSettings.allowRepost = settings.allowRepost
+          readingSettings.requireLogin = settings.requireLogin
+          readingSettings.showAuthorInfo = settings.showAuthorInfo
+          readingSettings.enableTOC = settings.enableTOC
+        }
     }
   } catch (error) {
     ElMessage.error('加载文章失败')

@@ -3,6 +3,8 @@ export interface ReadingSettings {
   allowComments: boolean
   allowRepost: boolean
   requireLogin: boolean
+  showAuthorInfo: boolean
+  enableTOC: boolean
 }
 
 // 文章接口
@@ -59,6 +61,7 @@ export interface CreateArticleRequest {
   category_id: number
   tags: number[]
   status: number
+  reading_settings?: ReadingSettings
 }
 
 // 更新文章请求参数
@@ -68,6 +71,7 @@ export interface UpdateArticleRequest {
   categoryId?: number
   tagIds?: number[]
   isPublished?: boolean
+  reading_settings?: ReadingSettings
 }
 
 // 文章列表查询参数
