@@ -43,93 +43,120 @@
       </div>
     </header>
 
+    <!-- Hero区域 -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1 class="hero-title">探索所有文章</h1>
+          <p class="hero-subtitle">发现更多精彩内容，拓展你的知识视野</p>
+          <div class="hero-stats">
+            <div class="stat-item">
+              <el-icon><Document /></el-icon>
+              <span>{{ articleStore.total }} 篇文章</span>
+            </div>
+            <div class="stat-item">
+              <el-icon><View /></el-icon>
+              <span>{{ formatNumber(totalViews) }} 总阅读量</span>
+            </div>
+            <div class="stat-item">
+              <el-icon><ChatDotRound /></el-icon>
+              <span>{{ formatNumber(totalComments) }} 总评论</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 主要内容 -->
     <main class="main">
       <div class="container">
         <div class="content">
-          <!-- 页面标题 -->
-          <div class="page-header">
-            <h1 class="page-title">
-              <el-icon><Document /></el-icon>
-              所有文章
-            </h1>
-            <p class="page-subtitle">共 {{ articleStore.total }} 篇文章</p>
-          </div>
-
           <!-- 文章列表 -->
           <div class="article-section">
-            <div v-if="articleStore.loading" class="loading">
-              <el-skeleton :rows="3" animated />
-              <el-skeleton :rows="3" animated />
-              <el-skeleton :rows="3" animated />
-              <el-skeleton :rows="3" animated />
-              <el-skeleton :rows="3" animated />
+            <div class="section-header">
+              <h2 class="section-title">
+                <el-icon><Document /></el-icon>
+                所有文章
+              </h2>
+              <div class="section-info">
+                <span class="article-count">共 {{ articleStore.total }} 篇文章</span>
+              </div>
             </div>
-            <div v-else-if="articleStore.articles.length === 0" class="empty">
-              <el-empty description="暂无文章" />
-            </div>
-            <div v-else>
-              <article 
-                v-for="article in articleStore.articles" 
-                :key="article.id" 
-                class="article-card"
-                @click="goToArticle(article.id)"
-              >
-                <div class="article-image">
-                  <img :src="getArticleImage(article)" alt="文章配图" />
-                </div>
-                <div class="article-content">
-                  <div class="article-meta">
-                    <el-tag size="small" type="primary">{{ article.category.name }}</el-tag>
-                    <span class="article-date">{{ formatDate(article.created_at) }}</span>
-                    <div class="article-stats">
-                      <span class="stat-item">
-                        <el-icon><View /></el-icon>
-                        {{ article.view_count }} 浏览
-                      </span>
-                      <span class="stat-item">
-                        <el-icon><ChatDotRound /></el-icon>
-                        {{ article.comment_count }} 评论
-                      </span>
-                      <span class="stat-item">
-                        <el-icon><Star /></el-icon>
-                        {{ article.like_count }} 点赞
-                      </span>
-                      <span class="stat-item">
-                        <el-icon><Collection /></el-icon>
-                        {{ article.favorite_count }} 收藏
+            
+            <div class="article-list">
+              <div v-if="articleStore.loading" class="loading">
+                <el-skeleton :rows="3" animated />
+                <el-skeleton :rows="3" animated />
+                <el-skeleton :rows="3" animated />
+                <el-skeleton :rows="3" animated />
+                <el-skeleton :rows="3" animated />
+              </div>
+              <div v-else-if="articleStore.articles.length === 0" class="empty">
+                <el-empty description="暂无文章" />
+              </div>
+              <div v-else>
+                <article 
+                  v-for="article in articleStore.articles" 
+                  :key="article.id" 
+                  class="article-card"
+                  @click="goToArticle(article.id)"
+                >
+                  <div class="article-image">
+                    <img :src="getArticleImage(article)" alt="文章配图" />
+                  </div>
+                  <div class="article-content">
+                    <div class="article-meta">
+                      <el-tag size="small" type="primary">{{ article.category.name }}</el-tag>
+                      <span class="article-date">{{ formatDate(article.created_at) }}</span>
+                      <div class="article-stats">
+                        <span class="stat-item">
+                          <el-icon><View /></el-icon>
+                          {{ article.view_count }} 浏览
+                        </span>
+                        <span class="stat-item">
+                          <el-icon><ChatDotRound /></el-icon>
+                          {{ article.comment_count }} 评论
+                        </span>
+                        <span class="stat-item">
+                          <el-icon><Star /></el-icon>
+                          {{ article.like_count }} 点赞
+                        </span>
+                        <span class="stat-item">
+                          <el-icon><Collection /></el-icon>
+                          {{ article.favorite_count }} 收藏
+                        </span>
+                      </div>
+                    </div>
+                    <h3 class="article-title">{{ article.title }}</h3>
+                    <p class="article-summary">{{ getArticleSummary(article.content) }}</p>
+                    <div class="article-footer">
+                      <div class="author">
+                        <el-avatar :size="24" :src="article.author_avatar">
+                          {{ article.author_name?.charAt(0) || 'U' }}
+                        </el-avatar>
+                        <span>{{ article.author_name }}</span>
+                      </div>
+                      <span class="read-more" @click.stop="goToArticle(article.id)">
+                        阅读全文 →
                       </span>
                     </div>
                   </div>
-                  <h3 class="article-title">{{ article.title }}</h3>
-                  <p class="article-summary">{{ getArticleSummary(article.content) }}</p>
-                  <div class="article-footer">
-                    <div class="author">
-                      <el-avatar :size="24" :src="article.author_avatar">
-                        {{ article.author_name?.charAt(0) || 'U' }}
-                      </el-avatar>
-                      <span>{{ article.author_name }}</span>
-                    </div>
-                    <span class="read-more" @click.stop="goToArticle(article.id)">
-                      阅读全文 →
-                    </span>
-                  </div>
-                </div>
-              </article>
+                </article>
+              </div>
             </div>
-          </div>
 
-          <!-- 分页 -->
-          <div v-if="articleStore.total > 0" class="pagination">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :page-sizes="[5, 10, 20, 50]"
-              :total="articleStore.total"
-              layout="total, sizes, prev, pager, next, jumper"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
+            <!-- 分页 -->
+            <div v-if="articleStore.total > 0" class="pagination">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[5, 10, 20, 50]"
+                :total="articleStore.total"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -154,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useArticleStore } from '@/stores/article'
@@ -175,9 +202,26 @@ const articleStore = useArticleStore()
 const currentPage = ref(1)
 const pageSize = ref(5) // 每页显示5篇文章
 
+// 计算总阅读量和总评论数
+const totalViews = computed(() => {
+  return articleStore.articles.reduce((sum, article) => sum + article.view_count, 0)
+})
+
+const totalComments = computed(() => {
+  return articleStore.articles.reduce((sum, article) => sum + article.comment_count, 0)
+})
+
 // 格式化日期
 const formatDate = (date: string) => {
   return dayjs(date).format('YYYY-MM-DD')
+}
+
+// 格式化数字
+const formatNumber = (num: number) => {
+  if (num >= 10000) {
+    return (num / 1000).toFixed(1) + 'k'
+  }
+  return num.toString()
 }
 
 // 获取文章摘要
@@ -259,9 +303,9 @@ onMounted(() => {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 80%;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 10px;
 }
 
 // 导航栏
@@ -323,6 +367,120 @@ onMounted(() => {
   }
 }
 
+// Hero区域
+.hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  color: white;
+  padding: 80px 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+    animation: float 6s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(30px, -30px) rotate(120deg); }
+  66% { transform: translate(-20px, 20px) rotate(240deg); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title {
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  line-height: 1.2;
+  animation: fadeInUp 1s ease-out;
+}
+
+.hero-subtitle {
+  font-size: 20px;
+  margin-bottom: 40px;
+  opacity: 0.9;
+  animation: fadeInUp 1s ease-out 0.3s both;
+}
+
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: nowrap;
+  margin-top: 40px;
+  animation: fadeInUp 1s ease-out 0.6s both;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  
+  &:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+  
+  .el-icon {
+    font-size: 20px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
 // 主要内容
 .main {
   padding: 60px 0;
@@ -334,35 +492,37 @@ onMounted(() => {
   gap: 40px;
 }
 
-// 页面标题
-.page-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 32px;
-  color: #333;
-  margin-bottom: 12px;
+// 文章区域
+.article-section {
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
   
-  .el-icon {
-    font-size: 32px;
-    color: #409eff;
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 24px;
+    color: #333;
+    margin: 0;
+  }
+  
+  .section-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .article-count {
+    color: #666;
+    font-size: 16px;
   }
 }
 
-.page-subtitle {
-  color: #666;
-  font-size: 16px;
-  margin: 0;
-}
-
-// 文章区域
-.article-section {
+.article-list {
   .loading {
     .el-skeleton {
       margin-bottom: 30px;
@@ -379,12 +539,12 @@ onMounted(() => {
   background: #fff;
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: flex;
-  min-height: 220px;
+  height: 220px;
   
   &:hover {
     transform: translateY(-4px);
@@ -410,58 +570,64 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  overflow: hidden;
 }
 
 .article-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   
   .article-date {
     color: #666;
-    font-size: 14px;
+    font-size: 12px;
   }
   
   .article-stats {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     
     .stat-item {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
       color: #666;
-      font-size: 12px;
+      font-size: 11px;
       
       .el-icon {
-        font-size: 14px;
+        font-size: 12px;
       }
     }
   }
 }
 
 .article-title {
-  font-size: 22px;
+  font-size: 21px;
   font-weight: bold;
   color: #333;
   margin-bottom: 16px;
-  line-height: 1.4;
-  flex: 1;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  height: 55px;
 }
 
 .article-summary {
   color: #666;
-  line-height: 1.6;
-  margin-bottom: 20px;
-  flex: 2;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
-  -webkit-box-orient: vertical;
+  line-height: 1.4;
+  margin-bottom: 18px;
   overflow: hidden;
-  font-size: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 16px;
+  height: 45px;
 }
 
 .article-footer {
@@ -473,19 +639,21 @@ onMounted(() => {
 .author {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: #666;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .read-more {
   color: #409eff;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   
   &:hover {
     text-decoration: underline;
+    color: #337ecc;
   }
 }
 
@@ -535,33 +703,56 @@ onMounted(() => {
 
 // 响应式设计
 @media (max-width: 768px) {
+  .container {
+    max-width: 95%;
+    padding: 0 10px;
+  }
+  
   .article-card {
     flex-direction: column;
-    min-height: auto;
+    height: 260px;
   }
   
   .article-image {
     width: 100%;
-    height: 200px;
+    height: 120px;
   }
   
   .article-content {
-    flex: none;
+    flex: 1;
+    padding: 12px;
   }
   
   .article-title {
-    font-size: 20px;
-    flex: none;
-  }
-  
-  .article-summary {
-    flex: none;
+    font-size: 16px;
+    height: auto;
     -webkit-line-clamp: 2;
     line-clamp: 2;
   }
   
-  .page-title {
-    font-size: 24px;
+  .article-summary {
+    height: auto;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    font-size: 13px;
+  }
+  
+  .hero-title {
+    font-size: 32px;
+  }
+  
+  .hero-stats {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .stat-item {
+    font-size: 14px;
+    padding: 8px 12px;
+    
+    .el-icon {
+      font-size: 16px;
+    }
   }
   
   .nav {
@@ -570,6 +761,12 @@ onMounted(() => {
   
   .nav-item {
     font-size: 14px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 }
 </style> 
