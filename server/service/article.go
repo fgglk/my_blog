@@ -932,3 +932,77 @@ func (s *ArticleService) GetUserArticles(userID uint, page, size int) ([]databas
 
 	return articles, total, nil
 }
+
+// GetRelatedArticles 获取相关文章
+// 规则：1. 只显示同分类文章 2. 最多显示4篇 3. 优先显示同标签文章 4. 不足4篇按实际数量显示
+func (s *ArticleService) GetRelatedArticles(articleID uint) ([]database.Article, error) {
+	// 首先获取当前文章信息
+	var currentArticle database.Article
+	if err := global.DB.Preload("Category").Preload("Tags").Where("id = ? AND status = ?", articleID, 1).First(&currentArticle).Error; err != nil {
+		return nil, err
+	}
+
+	// 获取同分类的所有文章（排除当前文章）
+	var sameCategoryArticles []database.Article
+	if err := global.DB.
+		Preload("Category").
+		Preload("Tags").
+		Preload("Author").
+		Where("category_id = ? AND id != ? AND status = ?", currentArticle.CategoryID, articleID, 1).
+		Order("created_at DESC").
+		Find(&sameCategoryArticles).Error; err != nil {
+		return nil, err
+	}
+
+	// 如果没有同分类文章，返回空数组
+	if len(sameCategoryArticles) == 0 {
+		return []database.Article{}, nil
+	}
+
+	// 如果同分类文章少于等于4篇，直接返回
+	if len(sameCategoryArticles) <= 4 {
+		return sameCategoryArticles, nil
+	}
+
+	// 如果同分类文章多于4篇，优先显示同标签的文章
+	var relatedArticles []database.Article
+	var otherArticles []database.Article
+
+	// 获取当前文章的标签ID列表
+	currentTagIDs := make(map[uint]bool)
+	for _, tag := range currentArticle.Tags {
+		currentTagIDs[tag.ID] = true
+	}
+
+	// 分类文章：有相同标签的优先
+	for _, article := range sameCategoryArticles {
+		hasCommonTag := false
+		for _, tag := range article.Tags {
+			if currentTagIDs[tag.ID] {
+				hasCommonTag = true
+				break
+			}
+		}
+		
+		if hasCommonTag {
+			relatedArticles = append(relatedArticles, article)
+		} else {
+			otherArticles = append(otherArticles, article)
+		}
+	}
+
+	// 组合结果：优先显示有相同标签的文章，然后补充其他文章
+	result := make([]database.Article, 0, 4)
+	
+	// 先添加有相同标签的文章（最多4篇）
+	for i := 0; i < len(relatedArticles) && len(result) < 4; i++ {
+		result = append(result, relatedArticles[i])
+	}
+	
+	// 如果还不够4篇，从其他文章中补充
+	for i := 0; i < len(otherArticles) && len(result) < 4; i++ {
+		result = append(result, otherArticles[i])
+	}
+
+	return result, nil
+}

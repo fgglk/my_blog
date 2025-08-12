@@ -456,3 +456,43 @@ func (a *ArticleApi) GetUserArticles(c *gin.Context) {
 
 	response.OkWithData(result, c)
 }
+
+// @Summary 获取相关文章
+// @Description 根据当前文章获取相关文章，优先显示同分类同标签的文章
+// @Tags article
+// @Accept json
+// @Produce json
+// @Param id path int true "当前文章ID"
+// @Success 200 {object} response.Response{data=response.ArticleListResponse}
+// @Router /api/articles/{id}/related [get]
+func (a *ArticleApi) GetRelatedArticles(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		response.FailWithMessage("无效的文章ID", c)
+		return
+	}
+
+	// 调用服务层获取相关文章
+	articles, err := articleService.GetRelatedArticles(uint(id))
+	if err != nil {
+		response.FailWithMessage("获取相关文章失败: "+err.Error(), c)
+		return
+	}
+
+	// 转换为响应模型
+	var articleResponses []response.ArticleResponse
+	for _, article := range articles {
+		articleResponses = append(articleResponses, response.ToArticleResponse(article, article.Category, article.Tags, article.Author.Username, 0))
+	}
+
+	// 构建响应数据
+	result := response.ArticleListResponse{
+		List:  articleResponses,
+		Total: int64(len(articleResponses)),
+		Page:  1,
+		Size:  len(articleResponses),
+	}
+
+	response.OkWithData(result, c)
+}

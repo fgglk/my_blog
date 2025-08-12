@@ -606,14 +606,10 @@ const loadArticle = async () => {
 // 加载相关文章
 const loadRelatedArticles = async (articleId: number) => {
   try {
-    const response = await articleApi.getArticleList({
-      page: 1,
-      size: 5,
-      categoryId: articleStore.currentArticle?.category_id
-    })
-            if (response.code === 0) {
-          relatedArticles.value = (response.data.list || []).filter(article => article.id !== articleId)
-        } else {
+    const response = await articleApi.getRelatedArticles(articleId)
+    if (response.code === 0) {
+      relatedArticles.value = response.data.list || []
+    } else {
       console.error('加载相关文章失败:', response.msg)
       relatedArticles.value = []
     }

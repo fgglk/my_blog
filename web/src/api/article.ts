@@ -65,5 +65,10 @@ export const articleApi = {
   // 获取用户文章列表
   getUserArticles: (page = 1, size = 10): Promise<ApiResponse<ArticleListResponse>> => {
     return request.get('/articles/my', { params: { page, size } })
+  },
+
+  // 获取相关文章
+  getRelatedArticles: (articleId: number): Promise<ApiResponse<ArticleListResponse>> => {
+    return request.get(`/articles/${articleId}/related`)
   }
 } 
