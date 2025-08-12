@@ -142,9 +142,9 @@
                           </el-avatar>
                           <span>{{ article.author_name }}</span>
                         </div>
-                       <router-link :to="`/article/${article.id}`" class="read-more">
+                       <span class="read-more" @click.stop="goToArticle(article.id)">
                          阅读全文 →
-                       </router-link>
+                       </span>
                      </div>
                    </div>
                  </article>
@@ -912,6 +912,7 @@ onUnmounted(() => {
   text-decoration: none;
   font-size: 12px;
   font-weight: 500;
+  cursor: pointer;
   
   &:hover {
     text-decoration: underline;

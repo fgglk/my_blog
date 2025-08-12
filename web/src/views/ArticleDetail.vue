@@ -264,7 +264,6 @@
                   v-for="article in relatedArticles" 
                   :key="article.id" 
                   class="related-article-card"
-                  @click="goToArticle(article.id)"
                 >
                   <div class="article-image">
                     <img :src="getArticleImage(article)" alt="文章配图" />
@@ -301,9 +300,9 @@
                         </el-avatar>
                         <span>{{ article.author_name }}</span>
                       </div>
-                      <router-link :to="`/article/${article.id}`" class="read-more">
-                        阅读全文 →
-                      </router-link>
+                                                              <span class="read-more" @click.stop="goToArticle(article.id)">
+                                          阅读全文 →
+                                        </span>
                     </div>
                   </div>
                 </article>
@@ -612,9 +611,9 @@ const loadRelatedArticles = async (articleId: number) => {
       size: 5,
       categoryId: articleStore.currentArticle?.category_id
     })
-    if (response.code === 0) {
-      relatedArticles.value = (response.data.list || []).filter(article => article.id !== articleId)
-    } else {
+            if (response.code === 0) {
+          relatedArticles.value = (response.data.list || []).filter(article => article.id !== articleId)
+        } else {
       console.error('加载相关文章失败:', response.msg)
       relatedArticles.value = []
     }
@@ -781,10 +780,10 @@ const handleShare = () => {
   }
 }
 
-// 跳转到文章
-const goToArticle = (articleId: number) => {
-  router.push(`/article/${articleId}`)
-}
+      // 跳转到文章
+      const goToArticle = (articleId: number) => {
+        router.push(`/article/${articleId}`)
+      }
 
 // 获取文章摘要
 const getArticleSummary = (content: string) => {
@@ -853,6 +852,13 @@ const handleScroll = () => {
 watch(renderedContent, () => {
   fixImageStyles()
 }, { flush: 'post' })
+
+    // 监听路由参数变化，重新加载文章数据
+    watch(() => route.params.id, async (newId, oldId) => {
+      if (newId !== oldId) {
+        await loadArticle()
+      }
+    }, { immediate: false })
 
 // 组件挂载时加载数据
 onMounted(async () => {
@@ -2101,6 +2107,7 @@ onUnmounted(() => {
             padding: 6px 12px;
             border-radius: 6px;
             background: rgba(59, 130, 246, 0.1);
+            cursor: pointer;
             
             &:hover {
               background: rgba(59, 130, 246, 0.2);

@@ -239,13 +239,13 @@
                     <p class="article-summary">{{ getArticleSummary(article.content) }}</p>
                     <div class="article-footer">
                       <div class="article-actions">
-                        <router-link 
+                        <span 
                           v-if="article.status === '1' || article.is_published" 
-                          :to="`/article/${article.id}`" 
                           class="read-more"
+                          @click.stop="goToArticle(article.id)"
                         >
                           阅读全文 →
-                        </router-link>
+                        </span>
                         <span v-else class="draft-placeholder">{{ getWordCount(article.content) }} 字</span>
                         <div class="action-buttons">
                           <el-button type="success" size="small" @click.stop="goToEdit(article.id)">
@@ -1252,6 +1252,7 @@ const avatarUrlWithCacheBust = computed(() => {
     text-decoration: none;
     font-size: 12px;
     font-weight: 500;
+    cursor: pointer;
     
     &:hover {
       text-decoration: underline;
