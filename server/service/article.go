@@ -933,6 +933,35 @@ func (s *ArticleService) GetUserArticles(userID uint, page, size int) ([]databas
 	return articles, total, nil
 }
 
+// GetArticlesByUserID 根据用户ID获取文章列表（只获取已发布的文章）
+func (s *ArticleService) GetArticlesByUserID(userID uint, page, size int) ([]database.Article, int64, error) {
+	var articles []database.Article
+	var total int64
+
+	// 计算偏移量
+	offset := (page - 1) * size
+
+	// 查询总数（只统计已发布的文章）
+	if err := global.DB.Model(&database.Article{}).Where("author_id = ? AND status = ?", userID, 1).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 查询文章列表，预加载关联数据（只获取已发布的文章）
+	if err := global.DB.
+		Preload("Category").
+		Preload("Tags").
+		Preload("Author").
+		Where("author_id = ? AND status = ?", userID, 1).
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(size).
+		Find(&articles).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return articles, total, nil
+}
+
 // GetRelatedArticles 获取相关文章
 // 规则：1. 只显示同分类文章 2. 最多显示4篇 3. 优先显示同标签文章 4. 不足4篇按实际数量显示
 func (s *ArticleService) GetRelatedArticles(articleID uint) ([]database.Article, error) {

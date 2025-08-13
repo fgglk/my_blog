@@ -19,6 +19,7 @@ func UserRouter(router *gin.RouterGroup) {
 		publicRouter.GET("email/code", userApi.SendEmailCode) // 发送邮箱验证码
 		publicRouter.POST("forgot", userApi.ForgotPassword)   // 忘记密码
 		publicRouter.POST("reset", userApi.ResetPassword)     // 重置密码
+		publicRouter.GET(":id", userApi.GetUserById)          // 根据ID获取用户信息
 	}
 
 	// 需认证路由

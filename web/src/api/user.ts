@@ -25,6 +25,11 @@ export const userApi = {
     return request.get('/users/info')
   },
 
+  // 根据ID获取用户信息
+  getUserById: (userId: number): Promise<ApiResponse<UserInfo>> => {
+    return request.get(`/users/${userId}`)
+  },
+
   // 更新用户信息
   updateUserInfo: (data: UpdateUserRequest): Promise<ApiResponse> => {
     return request.put('/users/update', data)

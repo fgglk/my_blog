@@ -16,6 +16,7 @@ func ArticleRouter(Router *gin.RouterGroup) {
 		articleRouter.GET("/search", (&api.ArticleApi{}).SearchArticles)
 		articleRouter.GET("/stats", (&api.ArticleApi{}).GetWebsiteStats)
 		articleRouter.GET("/:id/related", (&api.ArticleApi{}).GetRelatedArticles)
+		articleRouter.GET("/user/:user_id", (&api.ArticleApi{}).GetArticlesByUserID) // 根据用户ID获取文章列表
 
 		// 需要认证的路由（包括可选的认证）
 		authArticleRouter := articleRouter.Use(middleware.InitJWT())

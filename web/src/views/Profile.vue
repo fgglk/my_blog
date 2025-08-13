@@ -36,9 +36,9 @@
                         class="user-avatar"
                         @error="handleAvatarError"
                       >
-                        {{ userStore.userInfo?.nickname?.charAt(0) || 'U' }}
+                        {{ displayUserInfo?.nickname?.charAt(0) || 'U' }}
                       </el-avatar>
-                      <div class="avatar-overlay" @click="triggerAvatarUpload">
+                      <div v-if="!isViewingOtherUser" class="avatar-overlay" @click="triggerAvatarUpload">
                         <el-icon><Camera /></el-icon>
                         <span>更换头像</span>
                       </div>
@@ -52,15 +52,15 @@
                     </div>
                   </div>
                   <div class="user-info">
-                    <h2 class="user-name">{{ userStore.userInfo?.nickname || '未设置昵称' }}</h2>
-                    <p class="user-username">@{{ userStore.userInfo?.username }}</p>
-                    <p class="user-email">{{ userStore.userInfo?.email }}</p>
+                    <h2 class="user-name">{{ displayUserInfo?.nickname || '未设置昵称' }}</h2>
+                    <p class="user-username">@{{ displayUserInfo?.username }}</p>
+                    <p class="user-email">{{ displayUserInfo?.email }}</p>
                     <div class="user-bio">
-                      <p>{{ userStore.userInfo?.bio || '这个人很懒，什么都没有留下...' }}</p>
+                      <p>{{ displayUserInfo?.bio || '这个人很懒，什么都没有留下...' }}</p>
                     </div>
                   </div>
                 </div>
-                <div class="profile-actions">
+                <div v-if="!isViewingOtherUser" class="profile-actions">
                   <el-button @click="showEditDialog = true" type="primary" size="large">
                     <el-icon><Edit /></el-icon>
                     编辑资料
@@ -116,7 +116,7 @@
               </div>
   
               <!-- 快捷操作卡片 -->
-              <div class="quick-actions-card">
+              <div v-if="!isViewingOtherUser" class="quick-actions-card">
                 <h3 class="quick-actions-title">快捷操作</h3>
                 <div class="quick-actions-list">
                   <div class="quick-action-item" @click="$router.push('/write')">
@@ -156,8 +156,8 @@
             <main class="main-content">
               <!-- 文章列表标题 -->
               <div class="articles-header">
-                <h2 class="articles-title">我的文章</h2>
-                <div class="articles-controls">
+                <h2 class="articles-title">{{ isViewingOtherUser ? '他的文章' : '我的文章' }}</h2>
+                <div v-if="!isViewingOtherUser" class="articles-controls">
                   <el-button type="primary" @click="$router.push('/write')" size="small">
                     <el-icon><Plus /></el-icon>
                     写文章
@@ -176,7 +176,7 @@
                       </span>
                     </template>
                   </el-tab-pane>
-                  <el-tab-pane label="草稿箱" name="draft">
+                  <el-tab-pane v-if="!isViewingOtherUser" label="草稿箱" name="draft">
                     <template #label>
                       <span class="tab-label">
                         <el-icon><EditPen /></el-icon>
@@ -247,7 +247,7 @@
                           阅读全文 →
                         </span>
                         <span v-else class="draft-placeholder">{{ getWordCount(article.content) }} 字</span>
-                        <div class="action-buttons">
+                        <div v-if="!isViewingOtherUser" class="action-buttons">
                           <el-button type="success" size="small" @click.stop="goToEdit(article.id)">
                             <el-icon><Edit /></el-icon>
                           </el-button>
@@ -317,10 +317,12 @@
   </template>
   
   <script setup lang="ts">
-  import { ref, reactive, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+  import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useArticleStore } from '@/stores/article'
+import { userApi } from '@/api/user'
+import { articleApi } from '@/api/article'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Camera, Edit, Lock, Document, View, Star, ChatDotRound, Plus, 
@@ -331,8 +333,33 @@ import type { Article } from '@/types/article'
 import { getPlainTextSummary } from '@/utils/markdown'
   
   const router = useRouter()
-  const userStore = useUserStore()
-  const articleStore = useArticleStore()
+const route = useRoute()
+const userStore = useUserStore()
+const articleStore = useArticleStore()
+
+// 当前查看的用户信息（用于查看其他用户时）
+const currentViewingUser = ref<any>(null)
+
+// 判断是否正在查看其他用户
+const isViewingOtherUser = computed(() => {
+  return route.params.id !== undefined
+})
+
+// 当前用户ID
+const currentUserId = computed(() => {
+  if (isViewingOtherUser.value) {
+    return parseInt(route.params.id as string)
+  }
+  return userStore.userInfo?.id
+})
+
+// 显示的用户信息
+const displayUserInfo = computed(() => {
+  if (isViewingOtherUser.value && currentViewingUser.value) {
+    return currentViewingUser.value
+  }
+  return userStore.userInfo
+})
   
   const showEditDialog = ref(false)
   const showPasswordDialog = ref(false)
@@ -378,7 +405,7 @@ const activeTab = ref('published')
 
 // 头像URL缓存破坏计算属性
 const avatarUrlWithCacheBust = computed(() => {
-  const avatarUrl = userStore.userInfo?.avatar
+  const avatarUrl = displayUserInfo.value?.avatar
   if (!avatarUrl) return ''
   
   // 使用更简单的缓存破坏机制
@@ -544,35 +571,7 @@ const avatarUrlWithCacheBust = computed(() => {
     return `https://picsum.photos/300/200?random=${article.id}`
   }
   
-  // 加载用户文章
-  const loadUserArticles = async () => {
-    try {
-      console.log('开始加载用户文章...')
-      const response = await articleStore.getUserArticles()
-      console.log('获取用户文章响应:', response)
-      
-      if (response.success && response.data) {
-        allUserArticles.value = response.data.list || []
-        console.log('用户文章列表:', allUserArticles.value)
-        
-        // 根据当前选项卡过滤文章
-        filterArticlesByTab()
-        
-        // 计算统计信息（只统计已发布的文章）
-        const publishedArticles = allUserArticles.value.filter(article => article.status === '1' || article.is_published)
-        userStats.articleCount = publishedArticles.length
-        userStats.totalViews = publishedArticles.reduce((sum, article) => sum + article.view_count, 0)
-        userStats.totalLikes = publishedArticles.reduce((sum, article) => sum + article.like_count, 0)
-        userStats.totalComments = publishedArticles.reduce((sum, article) => sum + article.comment_count, 0)
-        
-        console.log('用户统计信息:', userStats)
-      } else {
-        console.log('获取用户文章失败:', response.message)
-      }
-    } catch (error) {
-      console.error('加载用户文章失败:', error)
-    }
-  }
+
 
   // 根据选项卡过滤文章
   const filterArticlesByTab = () => {
@@ -610,9 +609,81 @@ const avatarUrlWithCacheBust = computed(() => {
     ElMessage.success('退出成功')
     router.push('/')
   }
+
+  // 加载用户信息
+  const loadUserInfo = async (userId: number) => {
+    try {
+      if (isViewingOtherUser.value) {
+        const response = await userApi.getUserById(userId)
+        if (response.code === 0) {
+          currentViewingUser.value = response.data
+          console.log('加载其他用户信息成功:', response.data)
+        } else {
+          ElMessage.error('获取用户信息失败')
+        }
+      } else {
+        currentViewingUser.value = null
+      }
+    } catch (error) {
+      console.error('加载用户信息失败:', error)
+      ElMessage.error('加载用户信息失败')
+    }
+  }
+
+  // 加载用户文章
+  const loadUserArticles = async () => {
+    try {
+      console.log('开始加载用户文章...')
+      let response
+      if (isViewingOtherUser.value) {
+        response = await articleApi.getArticlesByUserId(currentUserId.value!)
+        console.log('获取其他用户文章响应:', response)
+        if (response.code === 0 && response.data) {
+          allUserArticles.value = response.data.list || []
+          console.log('其他用户文章列表:', allUserArticles.value)
+          filterArticlesByTab()
+          const publishedArticles = allUserArticles.value.filter(article => article.status === '1' || article.is_published)
+          userStats.articleCount = publishedArticles.length
+          userStats.totalViews = publishedArticles.reduce((sum, article) => sum + article.view_count, 0)
+          userStats.totalLikes = publishedArticles.reduce((sum, article) => sum + article.like_count, 0)
+          userStats.totalComments = publishedArticles.reduce((sum, article) => sum + article.comment_count, 0)
+          console.log('其他用户统计信息:', userStats)
+        } else {
+          console.log('获取其他用户文章失败:', response.msg)
+        }
+      } else {
+        response = await articleStore.getUserArticles()
+        console.log('获取当前用户文章响应:', response)
+        if (response.success && response.data) {
+          allUserArticles.value = response.data.list || []
+          console.log('当前用户文章列表:', allUserArticles.value)
+          filterArticlesByTab()
+          const publishedArticles = allUserArticles.value.filter(article => article.status === '1' || article.is_published)
+          userStats.articleCount = publishedArticles.length
+          userStats.totalViews = publishedArticles.reduce((sum, article) => sum + article.view_count, 0)
+          userStats.totalLikes = publishedArticles.reduce((sum, article) => sum + article.like_count, 0)
+          userStats.totalComments = publishedArticles.reduce((sum, article) => sum + article.comment_count, 0)
+          console.log('当前用户统计信息:', userStats)
+        } else {
+          console.log('获取当前用户文章失败:', response.message)
+        }
+      }
+    } catch (error) {
+      console.error('加载用户文章失败:', error)
+    }
+  }
+
+  // 监听路由参数变化
+  watch(() => route.params.id, async (newId, oldId) => {
+    if (newId !== oldId) {
+      await loadUserInfo(currentUserId.value!)
+      await loadUserArticles()
+    }
+  }, { immediate: false })
   
-  onMounted(() => {
-    loadUserArticles()
+  onMounted(async () => {
+    await loadUserInfo(currentUserId.value!)
+    await loadUserArticles()
   })
   </script>
   

@@ -79,7 +79,7 @@
                 
                 <!-- 作者信息 -->
                 <div v-if="showAuthorSection" class="author-section">
-                  <div class="author-info">
+                  <div class="author-info" @click="goToAuthorProfile" style="cursor: pointer;">
                     <el-avatar :size="40" class="author-avatar" :src="articleStore.currentArticle.author_avatar">
                       {{ articleStore.currentArticle.author_name.charAt(0) }}
                     </el-avatar>
@@ -88,8 +88,8 @@
                       <el-tag size="small" type="primary" class="author-tag">作者</el-tag>
                     </div>
                     <span class="publish-date">发布于 {{ formatDate(articleStore.currentArticle.created_at) }}</span>
+                    <el-icon class="click-hint"><ArrowRight /></el-icon>
                   </div>
-
                 </div>
                 
                 <!-- 文章标签 -->
@@ -398,7 +398,7 @@ import { commentApi } from '@/api/comment'
 import { articleApi } from '@/api/article'
 import { ElMessage } from 'element-plus'
 import { 
-  View, ChatDotRound, Star, Collection, Document, Link, User, Clock, Box, Edit, Lock
+  View, ChatDotRound, Star, Collection, Document, Link, User, Clock, Box, Edit, Lock, ArrowRight
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import MarkdownIt from 'markdown-it'
@@ -601,6 +601,15 @@ const loadArticle = async () => {
   
   // 文章加载完成后修复图片样式
   fixImageStyles()
+}
+
+// 跳转到作者个人中心
+const goToAuthorProfile = () => {
+  if (articleStore.currentArticle?.author_id) {
+    router.push(`/profile/${articleStore.currentArticle.author_id}`)
+  } else {
+    ElMessage.warning('无法获取作者信息')
+  }
 }
 
 // 加载相关文章
@@ -1209,6 +1218,19 @@ onUnmounted(() => {
   font-size: 14px;
   color: #6b7280;
   font-weight: 500;
+}
+
+.click-hint {
+  font-size: 16px;
+  color: #3b82f6;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+.author-info:hover .click-hint {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"strconv"
 	"server/global"
 	"server/model/request"
 	"server/model/response"
@@ -97,6 +98,22 @@ func (u *UserApi) GetUserInfo(c *gin.Context) {
 		return
 	}
 	if err, user := userService.GetUserInfo(userId); err != nil {
+		response.FailWithMessage("获取用户信息失败: "+err.Error(), c)
+	} else {
+		response.OkWithDetailed(response.ToUserResponse(user), "获取成功", c)
+	}
+}
+
+// GetUserById 根据ID获取用户信息
+func (u *UserApi) GetUserById(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		response.FailWithMessage("无效的用户ID", c)
+		return
+	}
+
+	if err, user := userService.GetUserInfo(uint(id)); err != nil {
 		response.FailWithMessage("获取用户信息失败: "+err.Error(), c)
 	} else {
 		response.OkWithDetailed(response.ToUserResponse(user), "获取成功", c)

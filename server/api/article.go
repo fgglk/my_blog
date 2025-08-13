@@ -457,6 +457,61 @@ func (a *ArticleApi) GetUserArticles(c *gin.Context) {
 	response.OkWithData(result, c)
 }
 
+// GetArticlesByUserID 根据用户ID获取文章列表
+// @Description 根据用户ID获取该用户的文章列表，公开接口
+// @Tags article
+// @Accept json
+// @Produce json
+// @Param user_id path int true "用户ID"
+// @Param page query int false "页码，默认为1"
+// @Param size query int false "每页条数，默认为10"
+// @Success 200 {object} response.Response{data=response.ArticleListResponse}
+// @Router /api/articles/user/{user_id} [get]
+func (a *ArticleApi) GetArticlesByUserID(c *gin.Context) {
+	// 获取用户ID参数
+	userIDStr := c.Param("user_id")
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		response.FailWithMessage("无效的用户ID", c)
+		return
+	}
+
+	// 获取查询参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "10"))
+
+	// 验证参数
+	if page <= 0 {
+		page = 1
+	}
+	if size <= 0 || size > 100 {
+		size = 10
+	}
+
+	// 调用服务层获取用户文章（只获取已发布的文章）
+	articles, total, err := articleService.GetArticlesByUserID(uint(userID), page, size)
+	if err != nil {
+		response.FailWithMessage("获取用户文章失败: "+err.Error(), c)
+		return
+	}
+
+	// 转换为响应模型
+	var articleResponses []response.ArticleResponse
+	for _, article := range articles {
+		articleResponses = append(articleResponses, response.ToArticleResponse(article, article.Category, article.Tags, article.Author.Username, 0))
+	}
+
+	       // 构建响应数据
+       result := response.ArticleListResponse{
+         List:  articleResponses,
+         Total: total,
+         Page:  page,
+         Size:  size,
+       }
+
+	response.OkWithData(result, c)
+}
+
 // @Summary 获取相关文章
 // @Description 根据当前文章获取相关文章，优先显示同分类同标签的文章
 // @Tags article

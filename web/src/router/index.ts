@@ -33,6 +33,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '个人中心', requiresAuth: true }
   },
   {
+    path: '/profile/:id',
+    name: 'UserProfile',
+    component: () => import('@/views/Profile.vue'),
+    meta: { title: '用户主页' }
+  },
+  {
     path: '/write',
     name: 'Write',
     component: () => import('@/views/Write.vue'),

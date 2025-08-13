@@ -25,11 +25,25 @@
           </nav>
           <div class="user-section">
             <el-icon class="notification-icon"><Bell /></el-icon>
-            <div class="user-info">
-              <el-avatar :src="userStore.userInfo?.avatar" :size="32" />
-              <span class="username">{{ userStore.userInfo?.username }}</span>
-              <el-icon><ArrowDown /></el-icon>
-            </div>
+            <el-dropdown @command="handleUserCommand" trigger="click">
+              <div class="user-info">
+                <el-avatar :src="userStore.userInfo?.avatar" :size="32" />
+                <span class="username">{{ userStore.userInfo?.username }}</span>
+                <el-icon><ArrowDown /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="profile">
+                    <el-icon><User /></el-icon>
+                    个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>
+                    <el-icon><SwitchButton /></el-icon>
+                    退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </div>
       </div>
@@ -436,14 +450,14 @@ import { useUserStore } from '@/stores/user'
 import { useArticleStore } from '@/stores/article'
 import { articleApi } from '@/api/article'
 import { categoryApi } from '@/api/category'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Category, ReadingSettings } from '@/types/article'
 import MarkdownIt from 'markdown-it'
 import {
   House, Search, Edit, Bell, ArrowDown, Link, Message, Collection,
   Refresh, InfoFilled, Upload, Promotion, View,
-  Check, Picture, User, Clock, Document
+  Check, Picture, User, Clock, Document, SwitchButton
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -513,6 +527,34 @@ const loadCategories = async () => {
   } catch (error) {
     console.error('加载分类失败:', error)
     ElMessage.error('加载分类失败')
+  }
+}
+
+// 处理用户下拉菜单命令
+const handleUserCommand = (command: string) => {
+  switch (command) {
+    case 'profile':
+      router.push('/profile')
+      break
+    case 'logout':
+      handleLogout()
+      break
+  }
+}
+
+// 退出登录
+const handleLogout = async () => {
+  try {
+    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    userStore.logout()
+    ElMessage.success('退出成功')
+    router.push('/')
+  } catch {
+    // 用户取消
   }
 }
 
