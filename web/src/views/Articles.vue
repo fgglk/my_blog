@@ -612,9 +612,14 @@ onMounted(() => {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   -webkit-box-orient: vertical;
   height: 55px;
+  /* Standard properties for compatibility */
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  display: box;
+  box-orient: vertical;
+  line-clamp: 2;
 }
 
 .article-summary {
@@ -624,10 +629,15 @@ onMounted(() => {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   -webkit-box-orient: vertical;
   font-size: 16px;
   height: 45px;
+  /* Standard properties for compatibility */
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  display: box;
+  box-orient: vertical;
+  line-clamp: 2;
 }
 
 .article-footer {
@@ -727,12 +737,14 @@ onMounted(() => {
     font-size: 16px;
     height: auto;
     -webkit-line-clamp: 2;
+    /* Standard properties for compatibility */
     line-clamp: 2;
   }
   
   .article-summary {
     height: auto;
     -webkit-line-clamp: 2;
+    /* Standard properties for compatibility */
     line-clamp: 2;
     font-size: 13px;
   }

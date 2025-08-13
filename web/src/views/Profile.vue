@@ -1263,9 +1263,14 @@ const avatarUrlWithCacheBust = computed(() => {
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
     height: 42px; // 固定标题高度
+    /* Standard properties for compatibility */
+    display: -moz-box;
+    -moz-box-orient: vertical;
+    display: box;
+    box-orient: vertical;
+    line-clamp: 2;
   }
   
   .article-summary {
@@ -1275,10 +1280,15 @@ const avatarUrlWithCacheBust = computed(() => {
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
     font-size: 13px;
     height: 36px; // 固定摘要高度
+    /* Standard properties for compatibility */
+    display: -moz-box;
+    -moz-box-orient: vertical;
+    display: box;
+    box-orient: vertical;
+    line-clamp: 2;
   }
   
   .article-footer {
@@ -1406,12 +1416,14 @@ const avatarUrlWithCacheBust = computed(() => {
     font-size: 16px;
     height: auto;
     -webkit-line-clamp: 2;
+    /* Standard properties for compatibility */
     line-clamp: 2;
   }
   
   .article-summary {
     height: auto;
     -webkit-line-clamp: 2;
+    /* Standard properties for compatibility */
     line-clamp: 2;
     font-size: 13px;
   }

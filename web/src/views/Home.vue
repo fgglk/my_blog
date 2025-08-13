@@ -875,9 +875,14 @@ onUnmounted(() => {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   -webkit-box-orient: vertical;
   height: 55px; // 增加标题高度
+  /* Standard properties for compatibility */
+  display: -moz-box;
+  -moz-box-orient: vertical;
+  display: box;
+  box-orient: vertical;
+  line-clamp: 2;
 }
 
         .article-summary {
@@ -887,10 +892,15 @@ onUnmounted(() => {
           overflow: hidden;
           display: -webkit-box;
           -webkit-line-clamp: 2;
-          line-clamp: 2;
           -webkit-box-orient: vertical;
           font-size: 16px;
           height: 45px; // 增加摘要高度
+          /* Standard properties for compatibility */
+          display: -moz-box;
+          -moz-box-orient: vertical;
+          display: box;
+          box-orient: vertical;
+          line-clamp: 2;
         }
 
 .article-footer {
@@ -1166,12 +1176,14 @@ onUnmounted(() => {
     font-size: 16px;
     height: auto;
     -webkit-line-clamp: 2;
+    /* Standard properties for compatibility */
     line-clamp: 2;
   }
   
   .article-summary {
     height: auto;
     -webkit-line-clamp: 2;
+    /* Standard properties for compatibility */
     line-clamp: 2;
     font-size: 13px;
   }

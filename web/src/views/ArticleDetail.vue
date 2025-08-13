@@ -2077,9 +2077,14 @@ onUnmounted(() => {
           line-height: 1.4;
           display: -webkit-box;
           -webkit-line-clamp: 2;
-          line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
+          /* Standard properties for compatibility */
+          display: -moz-box;
+          -moz-box-orient: vertical;
+          display: box;
+          box-orient: vertical;
+          line-clamp: 2;
         }
 
         .article-summary {
@@ -2088,9 +2093,14 @@ onUnmounted(() => {
           margin: 0 0 15px 0;
           display: -webkit-box;
           -webkit-line-clamp: 3;
-          line-clamp: 3;
           -webkit-box-orient: vertical;
           overflow: hidden;
+          /* Standard properties for compatibility */
+          display: -moz-box;
+          -moz-box-orient: vertical;
+          display: box;
+          box-orient: vertical;
+          line-clamp: 3;
         }
         
         .article-footer {
