@@ -9,20 +9,22 @@ import (
 
 // ArticleES 文章搜索文档结构
 type ArticleES struct {
-	ID            uint64                `json:"id"`
-	Title         string                `json:"title"`
-	Content       string                `json:"content"`
-	Summary       string                `json:"summary"`
-	Tags          []string              `json:"tags"`
-	CategoryID    uint                  `json:"category_id"`
-	UserID        uint                  `json:"user_id"`
-	Status        appType.ArticleStatus `json:"status"`
-	ViewCount     int                   `json:"view_count"`
-	LikeCount     int                   `json:"like_count"`
-	CommentCount  int                   `json:"comment_count"`
-	FavoriteCount int                   `json:"favorite_count"`
-	CreatedAt     time.Time             `json:"created_at"`
-	UpdatedAt     time.Time             `json:"updated_at"`
+	ID             uint64                `json:"id"`
+	Title          string                `json:"title"`
+	Content        string                `json:"content"`
+	Summary        string                `json:"summary"`
+	Tags           []string              `json:"tags"`
+	CategoryID     uint                  `json:"category_id"`
+	UserID         uint                  `json:"user_id"`
+	AuthorName     string                `json:"author_name"`     // 添加作者名字字段
+	AuthorNickname string                `json:"author_nickname"` // 添加作者昵称字段
+	Status         appType.ArticleStatus `json:"status"`
+	ViewCount      int                   `json:"view_count"`
+	LikeCount      int                   `json:"like_count"`
+	CommentCount   int                   `json:"comment_count"`
+	FavoriteCount  int                   `json:"favorite_count"`
+	CreatedAt      time.Time             `json:"created_at"`
+	UpdatedAt      time.Time             `json:"updated_at"`
 }
 
 // IndexName 返回索引名称
@@ -40,18 +42,20 @@ func GetMapping() *types.TypeMapping {
 					"keyword": types.KeywordProperty{},
 				},
 			},
-			"content":        types.TextProperty{},
-			"summary":        types.TextProperty{},
-			"tags":           types.KeywordProperty{},
-			"category_id":    types.IntegerNumberProperty{},
-			"user_id":        types.IntegerNumberProperty{},
-			"status":         types.IntegerNumberProperty{},
-			"view_count":     types.IntegerNumberProperty{},
-			"like_count":     types.IntegerNumberProperty{},
-			"comment_count":  types.IntegerNumberProperty{},
-			"favorite_count": types.IntegerNumberProperty{},
-			"created_at":     types.DateProperty{},
-			"updated_at":     types.DateProperty{},
+			"content":         types.TextProperty{},
+			"summary":         types.TextProperty{},
+			"tags":            types.KeywordProperty{},
+			"category_id":     types.IntegerNumberProperty{},
+			"user_id":         types.IntegerNumberProperty{},
+			"author_name":     types.TextProperty{}, // 添加作者名字字段映射
+			"author_nickname": types.TextProperty{}, // 添加作者昵称字段映射
+			"status":          types.IntegerNumberProperty{},
+			"view_count":      types.IntegerNumberProperty{},
+			"like_count":      types.IntegerNumberProperty{},
+			"comment_count":   types.IntegerNumberProperty{},
+			"favorite_count":  types.IntegerNumberProperty{},
+			"created_at":      types.DateProperty{},
+			"updated_at":      types.DateProperty{},
 		},
 	}
 }

@@ -65,8 +65,6 @@ func (s *ArticleService) CreateArticle(req request.ArticleCreateRequest) (databa
 		Slug: generateSlug(req.Title),
 	}
 
-
-
 	// 使用事务确保数据一致性
 	tx := global.DB.Begin()
 	defer func() {
@@ -99,7 +97,7 @@ func (s *ArticleService) CreateArticle(req request.ArticleCreateRequest) (databa
 		tx.Rollback()
 		return article, err
 	}
-	
+
 	// 如果状态为0，显式更新状态字段以避免默认值
 	if req.Status == 0 {
 		if err := tx.Model(&article).Update("status", 0).Error; err != nil {
@@ -477,9 +475,9 @@ func (s *ArticleService) handleArticleTags(tx *gorm.DB, articleID uint, tagIDs [
 
 // SyncArticleToES 同步文章到Elasticsearch
 func (s *ArticleService) SyncArticleToES(articleID uint) error {
-	// 获取完整文章信息
+	// 获取完整文章信息，包括作者信息
 	var article database.Article
-	if err := global.DB.Preload("Category").Preload("Tags").Where("id = ?", articleID).First(&article).Error; err != nil {
+	if err := global.DB.Preload("Category").Preload("Tags").Preload("Author").Where("id = ?", articleID).First(&article).Error; err != nil {
 		return err
 	}
 
@@ -499,6 +497,10 @@ func (s *ArticleService) SyncArticleToES(articleID uint) error {
 		CreatedAt:     article.CreatedAt,
 		UpdatedAt:     article.UpdatedAt,
 	}
+
+	// 设置作者信息
+	esArticle.AuthorName = article.Author.Username
+	esArticle.AuthorNickname = article.Author.Nickname
 
 	// 提取标签名称
 	for _, tag := range article.Tags {
@@ -765,6 +767,7 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 	boost1 := float32(3.0)
 	boost2 := float32(2.0)
 	boost3 := float32(1.5)
+	boost4 := float32(2.5)
 	// 关键词搜索 (多字段)
 	if req.Keyword != "" {
 		boolQuery.Should = append(boolQuery.Should,
@@ -772,6 +775,8 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 			types.Query{Match: map[string]types.MatchQuery{"content": {Query: req.Keyword}}},
 			types.Query{Match: map[string]types.MatchQuery{"summary": {Query: req.Keyword, Boost: &boost2}}},
 			types.Query{Match: map[string]types.MatchQuery{"tags": {Query: req.Keyword, Boost: &boost3}}},
+			types.Query{Match: map[string]types.MatchQuery{"author_name": {Query: req.Keyword, Boost: &boost4}}},
+			types.Query{Match: map[string]types.MatchQuery{"author_nickname": {Query: req.Keyword, Boost: &boost4}}},
 		)
 		boolQuery.MinimumShouldMatch = "1"
 	}
@@ -828,7 +833,7 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 			From:  &from,                          // 传递指针
 			Size:  &size,                          // 传递指针
 		}).
-		SourceIncludes_("id", "title", "content", "summary", "category_id", "tags", "user_id", "status", "view_count", "comment_count", "like_count", "favorite_count", "created_at", "updated_at")
+		SourceIncludes_("id", "title", "content", "summary", "category_id", "tags", "user_id", "author_name", "author_nickname", "status", "view_count", "comment_count", "like_count", "favorite_count", "created_at", "updated_at")
 
 	// 执行查询并处理响应
 	resp, err := searchQuery.Do(ctx)
@@ -860,6 +865,88 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 	}
 
 	return result, nil
+}
+
+// SyncAllPublishedArticlesToES 同步所有已发布文章到ES
+func (s *ArticleService) SyncAllPublishedArticlesToES() error {
+	global.ZapLog.Info("开始同步所有已发布文章到ES")
+
+	// 先检查数据库中的文章总数
+	var totalCount int64
+	if err := global.DB.Model(&database.Article{}).Count(&totalCount).Error; err != nil {
+		return fmt.Errorf("查询文章总数失败: %v", err)
+	}
+	global.ZapLog.Info("数据库中总文章数", zap.Int64("total", totalCount))
+
+	// 检查已发布文章数量
+	var publishedCount int64
+	if err := global.DB.Model(&database.Article{}).Where("status = ?", 1).Count(&publishedCount).Error; err != nil {
+		return fmt.Errorf("查询已发布文章数量失败: %v", err)
+	}
+	global.ZapLog.Info("数据库中已发布文章数", zap.Int64("published", publishedCount))
+
+	// 获取所有已发布的文章
+	var articles []database.Article
+	if err := global.DB.Preload("Category").Preload("Tags").Preload("Author").Where("status = ?", 1).Find(&articles).Error; err != nil {
+		return fmt.Errorf("获取文章列表失败: %v", err)
+	}
+
+	// 检查预加载的数据
+	for i, article := range articles {
+		if i < 3 { // 只检查前3篇
+			global.ZapLog.Info("文章预加载检查",
+				zap.Uint("articleID", article.ID),
+				zap.String("title", article.Title),
+				zap.Uint("authorID", article.AuthorID),
+				zap.Uint("categoryID", article.CategoryID),
+				zap.Int("tagsCount", len(article.Tags)))
+		}
+	}
+
+	global.ZapLog.Info("找到已发布文章数量", zap.Int("count", len(articles)))
+
+	// 记录前几篇文章的详细信息用于调试
+	for i, article := range articles {
+		if i < 5 { // 只记录前5篇
+			global.ZapLog.Info("准备同步文章",
+				zap.Uint("articleID", article.ID),
+				zap.String("title", article.Title),
+				zap.Uint8("status", article.Status),
+				zap.String("createdAt", article.CreatedAt.Format("2006-01-02 15:04:05")))
+		}
+	}
+
+	// 批量同步到ES
+	successCount := 0
+	failCount := 0
+
+	for i, article := range articles {
+		global.ZapLog.Info("正在同步文章",
+			zap.Int("index", i+1),
+			zap.Int("total", len(articles)),
+			zap.Uint("articleID", article.ID),
+			zap.String("title", article.Title))
+
+		if err := s.SyncArticleToES(article.ID); err != nil {
+			global.ZapLog.Error("同步文章到ES失败",
+				zap.Uint("articleID", article.ID),
+				zap.String("title", article.Title),
+				zap.Error(err))
+			failCount++
+			continue
+		}
+		successCount++
+		global.ZapLog.Info("文章同步成功",
+			zap.Uint("articleID", article.ID),
+			zap.String("title", article.Title))
+	}
+
+	global.ZapLog.Info("ES同步完成",
+		zap.Int("total_articles", len(articles)),
+		zap.Int("success_count", successCount),
+		zap.Int("fail_count", failCount))
+
+	return nil
 }
 
 // GetWebsiteStats 获取网站统计数据
@@ -1012,7 +1099,7 @@ func (s *ArticleService) GetRelatedArticles(articleID uint) ([]database.Article,
 				break
 			}
 		}
-		
+
 		if hasCommonTag {
 			relatedArticles = append(relatedArticles, article)
 		} else {
@@ -1022,12 +1109,12 @@ func (s *ArticleService) GetRelatedArticles(articleID uint) ([]database.Article,
 
 	// 组合结果：优先显示有相同标签的文章，然后补充其他文章
 	result := make([]database.Article, 0, 4)
-	
+
 	// 先添加有相同标签的文章（最多4篇）
 	for i := 0; i < len(relatedArticles) && len(result) < 4; i++ {
 		result = append(result, relatedArticles[i])
 	}
-	
+
 	// 如果还不够4篇，从其他文章中补充
 	for i := 0; i < len(otherArticles) && len(result) < 4; i++ {
 		result = append(result, otherArticles[i])

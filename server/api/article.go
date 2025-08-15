@@ -6,7 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"go.uber.org/zap"
 
+	"server/global"
 	"server/model/request"
 	"server/model/response"
 	"server/service"
@@ -38,8 +40,6 @@ func (a *ArticleApi) CreateArticle(c *gin.Context) {
 
 		return
 	}
-
-
 
 	userID, err := utils.GetUserID(c)
 	if err != nil {
@@ -501,13 +501,13 @@ func (a *ArticleApi) GetArticlesByUserID(c *gin.Context) {
 		articleResponses = append(articleResponses, response.ToArticleResponse(article, article.Category, article.Tags, article.Author.Username, 0))
 	}
 
-	       // 构建响应数据
-       result := response.ArticleListResponse{
-         List:  articleResponses,
-         Total: total,
-         Page:  page,
-         Size:  size,
-       }
+	// 构建响应数据
+	result := response.ArticleListResponse{
+		List:  articleResponses,
+		Total: total,
+		Page:  page,
+		Size:  size,
+	}
 
 	response.OkWithData(result, c)
 }
@@ -550,4 +550,35 @@ func (a *ArticleApi) GetRelatedArticles(c *gin.Context) {
 	}
 
 	response.OkWithData(result, c)
+}
+
+// @Summary 同步所有已发布文章到ES
+// @Description 将数据库中所有已发布的文章同步到Elasticsearch
+// @Tags article
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} response.Response{msg=string}
+// @Router /api/articles/sync-es [post]
+func (a *ArticleApi) SyncAllArticlesToES(c *gin.Context) {
+	// 检查管理员权限
+	currentUserID, err := utils.GetUserID(c)
+	if err != nil {
+		response.NoAuth(err.Error(), c)
+		return
+	}
+
+	if !utils.IsAdmin(currentUserID) {
+		response.Forbidden("需要管理员权限", c)
+		return
+	}
+
+	// 异步执行同步任务
+	go func() {
+		if err := articleService.SyncAllPublishedArticlesToES(); err != nil {
+			global.ZapLog.Error("同步所有文章到ES失败", zap.Error(err))
+		}
+	}()
+
+	response.OkWithMessage("文章同步任务已启动，请查看日志了解进度", c)
 }

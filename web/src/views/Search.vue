@@ -117,6 +117,12 @@
                   <div class="article-meta">
                     <el-tag size="small" type="primary">{{ getCategoryName(article.category_id) }}</el-tag>
                     <span class="article-date">{{ formatDate(article.created_at) }}</span>
+                    <div class="article-author">
+                      <el-avatar :size="20" class="author-avatar">
+                        {{ getAuthorInitial(article.author_name || article.author_nickname) }}
+                      </el-avatar>
+                      <span class="author-name">{{ article.author_nickname || article.author_name }}</span>
+                    </div>
                   </div>
                 </div>
                 <div class="article-summary">
@@ -266,6 +272,12 @@ const getArticleImage = (article: any) => {
 const getCategoryName = (categoryId: number) => {
   const category = categories.value.find(c => c.id === categoryId)
   return category ? category.name : '未分类'
+}
+
+// 获取作者首字母
+const getAuthorInitial = (authorName: string) => {
+  if (!authorName) return 'U'
+  return authorName.charAt(0).toUpperCase()
 }
 
 // 跳转到文章详情
@@ -576,6 +588,25 @@ onMounted(async () => {
     gap: 15px;
     font-size: 14px;
     color: #666;
+    
+    .article-author {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      
+      .author-avatar {
+        background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+        color: #fff;
+        font-weight: bold;
+        font-size: 12px;
+      }
+      
+      .author-name {
+        color: #3b82f6;
+        font-weight: 500;
+      }
+    }
   }
   
   .article-summary {

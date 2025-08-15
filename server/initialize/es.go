@@ -45,13 +45,21 @@ func InitEs() {
 
 	global.ES = client
 	global.ZapLog.Info("es connected successfully")
-	
-	// 自动创建索引
+
+	// 检查并创建索引（如果不存在）
 	esService := service.NewArticleESService()
-	if err := esService.CreateIndex(); err != nil {
-		global.ZapLog.Error("创建ES索引失败", zap.Error(err))
+	exists, err := esService.IndexExists()
+	if err != nil {
+		global.ZapLog.Error("检查ES索引存在性失败", zap.Error(err))
 		// 不退出程序，因为ES可能不是必需的
+	} else if !exists {
+		// 只在索引不存在时创建
+		if err := esService.CreateIndex(); err != nil {
+			global.ZapLog.Error("创建ES索引失败", zap.Error(err))
+		} else {
+			global.ZapLog.Info("ES索引创建成功")
+		}
 	} else {
-		global.ZapLog.Info("ES索引创建成功")
+		global.ZapLog.Info("ES索引已存在，跳过创建")
 	}
 }
