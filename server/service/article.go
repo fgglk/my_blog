@@ -750,6 +750,122 @@ func (s *ArticleService) ToggleFavorite(articleID uint, userID uint) (bool, erro
 	return !exists, nil // 返回是否收藏成功
 }
 
+// GetUserFavorites 获取用户收藏列表
+func (s *ArticleService) GetUserFavorites(userID uint, page, size int, sort string) ([]database.Favorite, int64, error) {
+	var favorites []database.Favorite
+	var total int64
+
+	// 计算偏移量
+	offset := (page - 1) * size
+
+	// 构建查询
+	query := global.DB.Model(&database.Favorite{}).Where("user_id = ?", userID)
+
+	// 统计总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 根据排序方式构建查询
+	var orderClause string
+	switch sort {
+	case "article_created_at":
+		// 按文章发布时间排序，需要JOIN文章表
+		query = query.Joins("LEFT JOIN articles ON favorites.article_id = articles.id")
+		orderClause = "articles.created_at DESC, favorites.created_at DESC"
+	case "view_count":
+		// 按文章阅读量排序，需要JOIN文章表
+		query = query.Joins("LEFT JOIN articles ON favorites.article_id = articles.id")
+		orderClause = "articles.view_count DESC, favorites.created_at DESC"
+	default:
+		// 默认按收藏时间排序
+		orderClause = "favorites.created_at DESC"
+	}
+
+	// 查询收藏列表，预加载文章信息
+	if err := query.
+		Preload("Article", func(db *gorm.DB) *gorm.DB {
+			return db.Preload("Category").Preload("Author")
+		}).
+		Order(orderClause).
+		Offset(offset).
+		Limit(size).
+		Find(&favorites).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return favorites, total, nil
+}
+
+// GetUserFavoritesLight 获取用户收藏列表（轻量级，不预加载文章详情）
+func (s *ArticleService) GetUserFavoritesLight(userID uint, page, size int) ([]database.Favorite, int64, error) {
+	var favorites []database.Favorite
+	var total int64
+
+	// 计算偏移量
+	offset := (page - 1) * size
+
+	// 构建查询，不预加载文章信息
+	query := global.DB.Model(&database.Favorite{}).Where("user_id = ?", userID)
+
+	// 统计总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 查询收藏列表，不预加载文章信息
+	if err := query.
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(size).
+		Find(&favorites).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return favorites, total, nil
+}
+
+// RemoveFavorite 取消收藏
+func (s *ArticleService) RemoveFavorite(favoriteID uint, userID uint) error {
+	var favorite database.Favorite
+	if err := global.DB.Where("id = ? AND user_id = ?", favoriteID, userID).First(&favorite).Error; err != nil {
+		return err
+	}
+
+	// 使用事务确保数据一致性
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 删除收藏记录
+	if err := tx.Delete(&favorite).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 减少文章收藏数
+	if err := tx.Model(&database.Article{}).
+		Where("id = ?", favorite.ArticleID).
+		Update("favorite_count", gorm.Expr("favorite_count - ?", 1)).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 异步同步到ES
+	go s.SyncArticleStatsToES(favorite.ArticleID)
+
+	return nil
+}
+
 func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.ArticleSearchResult, error) {
 	// 设置默认分页参数
 	if req.Page <= 0 {

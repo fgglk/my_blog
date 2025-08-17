@@ -133,21 +133,7 @@
                     <span class="action-text">我的收藏</span>
                     <el-icon class="arrow-icon"><ArrowRight /></el-icon>
                   </div>
-                  <div class="quick-action-item" @click="$router.push('/notifications')">
-                    <div class="action-icon">
-                      <el-icon><Bell /></el-icon>
-                    </div>
-                    <span class="action-text">消息通知</span>
-                    <div class="notification-badge">3</div>
-                    <el-icon class="arrow-icon"><ArrowRight /></el-icon>
-                  </div>
-                  <div class="quick-action-item" @click="$router.push('/settings')">
-                    <div class="action-icon">
-                      <el-icon><Setting /></el-icon>
-                    </div>
-                    <span class="action-text">账户设置</span>
-                    <el-icon class="arrow-icon"><ArrowRight /></el-icon>
-                  </div>
+
                 </div>
               </div>
             </aside>
@@ -326,7 +312,7 @@ import { articleApi } from '@/api/article'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Camera, Edit, Lock, Document, View, Star, ChatDotRound, Plus, 
-  ArrowRight, Bell, Setting, Delete, Collection, EditPen
+  ArrowRight, Delete, Collection, EditPen
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import type { Article } from '@/types/article'
@@ -1087,18 +1073,7 @@ const avatarUrlWithCacheBust = computed(() => {
       font-size: 16px;
     }
     
-    .notification-badge {
-      position: absolute;
-      top: 8px;
-      right: 35px;
-      background: #ef4444;
-      color: #fff;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 10px;
-      min-width: 16px;
-      text-align: center;
-    }
+
   }
   
   // 右侧主内容区域

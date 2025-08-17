@@ -28,6 +28,7 @@ func ArticleRouter(Router *gin.RouterGroup) {
 			authArticleRouter.DELETE("/:id", (&api.ArticleApi{}).DeleteArticle)
 			authArticleRouter.POST("/like", (&api.ArticleApi{}).ToggleLike)
 			authArticleRouter.POST("/favorite", (&api.ArticleApi{}).ToggleFavorite)
+			authArticleRouter.GET("/favorites", (&api.ArticleApi{}).GetUserFavorites)
 			authArticleRouter.POST("/sync-es", (&api.ArticleApi{}).SyncAllArticlesToES)
 		}
 	}

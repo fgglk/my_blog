@@ -130,6 +130,25 @@ func ToArticleResponse(article database.Article, category database.Category, tag
 	}
 }
 
+// 收藏记录响应
+type FavoriteResponse struct {
+	ID        uint            `json:"id"`
+	ArticleID uint            `json:"article_id"`
+	UserID    uint            `json:"user_id"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+	Article   ArticleResponse `json:"article"`
+}
+
+// 收藏列表响应
+type FavoriteListResponse struct {
+	List      []FavoriteResponse `json:"list"`
+	Total     int64              `json:"total"`
+	Page      int                `json:"page"`
+	Size      int                `json:"size"`
+	TotalPage int                `json:"total_page"`
+}
+
 // ToCategoryWithCountResponse 转换为带计数的分类响应
 func ToCategoryWithCountResponse(category database.CategoryWithCount) CategoryWithCountResponse {
 	return CategoryWithCountResponse{
@@ -164,5 +183,17 @@ func ToTagResponse(tag database.Tag) TagResponse {
 	return TagResponse{
 		ID:   tag.ID,
 		Name: tag.Name,
+	}
+}
+
+// ToFavoriteResponse 转换为收藏响应
+func ToFavoriteResponse(favorite database.Favorite, currentUserID uint) FavoriteResponse {
+	return FavoriteResponse{
+		ID:        favorite.ID,
+		ArticleID: favorite.ArticleID,
+		UserID:    favorite.UserID,
+		CreatedAt: favorite.CreatedAt,
+		UpdatedAt: favorite.UpdatedAt,
+		Article:   ToArticleResponse(favorite.Article, favorite.Article.Category, favorite.Article.Tags, favorite.Article.Author.Username, currentUserID),
 	}
 }

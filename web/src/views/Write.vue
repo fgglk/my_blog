@@ -24,7 +24,6 @@
             </router-link>
           </nav>
           <div class="user-section">
-            <el-icon class="notification-icon"><Bell /></el-icon>
             <el-dropdown @command="handleUserCommand" trigger="click">
               <div class="user-info">
                 <el-avatar :src="userStore.userInfo?.avatar" :size="32" />
@@ -455,7 +454,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import type { Category, ReadingSettings } from '@/types/article'
 import MarkdownIt from 'markdown-it'
 import {
-  House, Search, Edit, Bell, ArrowDown, Link, Message, Collection,
+  House, Search, Edit, ArrowDown, Link, Message, Collection,
   Refresh, InfoFilled, Upload, Promotion, View,
   Check, Picture, User, Clock, Document, SwitchButton
 } from '@element-plus/icons-vue'
@@ -1032,11 +1031,7 @@ onUnmounted(() => {
   gap: 20px;
 }
 
-.notification-icon {
-  font-size: 20px;
-  color: #666;
-  cursor: pointer;
-}
+
 
 .user-info {
   display: flex;

@@ -386,6 +386,118 @@ func (a *ArticleApi) ToggleFavorite(c *gin.Context) {
 	response.OkWithData(map[string]bool{"favorited": favorited}, c)
 }
 
+// @Summary 获取用户收藏列表
+// @Description 获取当前用户的收藏文章列表
+// @Tags article
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param page query int false "页码"
+// @Param size query int false "每页条数"
+// @Param sort query string false "排序方式"
+// @Success 200 {object} response.Response{data=response.FavoriteListResponse}
+// @Router /api/favorites [get]
+func (a *ArticleApi) GetUserFavorites(c *gin.Context) {
+	// 获取当前用户ID
+	currentUserID, err := utils.GetUserID(c)
+	if err != nil {
+		response.NoAuth(err.Error(), c)
+		return
+	}
+
+	// 获取查询参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "10"))
+	sort := c.DefaultQuery("sort", "created_at")
+
+	// 验证参数
+	if page <= 0 {
+		page = 1
+	}
+	if size <= 0 || size > 100 {
+		size = 10
+	}
+
+	// 调用服务层获取收藏列表
+	favorites, total, err := articleService.GetUserFavorites(currentUserID, page, size, sort)
+	if err != nil {
+		response.FailWithMessage("获取收藏列表失败: "+err.Error(), c)
+		return
+	}
+
+	// 添加调试日志
+	global.ZapLog.Info("获取收藏列表",
+		zap.Uint("userID", currentUserID),
+		zap.Int("page", page),
+		zap.Int("size", size),
+		zap.String("sort", sort),
+		zap.Int64("total", total),
+		zap.Int("count", len(favorites)),
+	)
+
+	// 调试第一个收藏记录的作者信息
+	if len(favorites) > 0 {
+		firstFavorite := favorites[0]
+		global.ZapLog.Info("第一个收藏记录的作者信息",
+			zap.Uint("articleID", firstFavorite.ArticleID),
+			zap.String("authorUsername", firstFavorite.Article.Author.Username),
+			zap.String("authorNickname", firstFavorite.Article.Author.Nickname),
+			zap.String("authorAvatar", firstFavorite.Article.Author.Avatar),
+		)
+	}
+
+	// 转换收藏记录为响应格式
+	var favoriteResponses []response.FavoriteResponse
+	for _, favorite := range favorites {
+		favoriteResponses = append(favoriteResponses, response.ToFavoriteResponse(favorite, currentUserID))
+	}
+
+	// 构建响应数据
+	result := response.FavoriteListResponse{
+		List:      favoriteResponses,
+		Total:     total,
+		Page:      page,
+		Size:      size,
+		TotalPage: (int(total) + size - 1) / size,
+	}
+
+	response.OkWithData(result, c)
+}
+
+// @Summary 取消收藏
+// @Description 取消收藏指定文章
+// @Tags article
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "收藏记录ID"
+// @Success 200 {object} response.Response{msg=string}
+// @Router /api/favorites/{id} [delete]
+func (a *ArticleApi) RemoveFavorite(c *gin.Context) {
+	// 获取收藏记录ID
+	favoriteIDStr := c.Param("id")
+	favoriteID, err := strconv.ParseUint(favoriteIDStr, 10, 32)
+	if err != nil {
+		response.FailWithMessage("无效的收藏记录ID", c)
+		return
+	}
+
+	// 获取当前用户ID
+	currentUserID, err := utils.GetUserID(c)
+	if err != nil {
+		response.NoAuth(err.Error(), c)
+		return
+	}
+
+	// 调用服务层取消收藏
+	if err := articleService.RemoveFavorite(uint(favoriteID), currentUserID); err != nil {
+		response.FailWithMessage("取消收藏失败: "+err.Error(), c)
+		return
+	}
+
+	response.OkWithMessage("取消收藏成功", c)
+}
+
 // @Summary 获取网站统计数据
 // @Description 获取网站的文章数量、阅读量、评论数、点赞数、收藏数等统计数据
 // @Tags article

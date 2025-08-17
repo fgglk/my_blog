@@ -7,6 +7,19 @@ export interface ReadingSettings {
   enableTOC: boolean
 }
 
+// 用户接口
+export interface User {
+  id: number
+  username: string
+  nickname?: string
+  avatar?: string
+  email: string
+  bio?: string
+  role: string
+  created_at: string
+  updated_at: string
+}
+
 // 文章接口
 export interface Article {
   id: number

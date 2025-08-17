@@ -75,5 +75,10 @@ export const articleApi = {
   // 获取相关文章
   getRelatedArticles: (articleId: number): Promise<ApiResponse<ArticleListResponse>> => {
     return request.get(`/articles/${articleId}/related`)
+  },
+
+  // 获取用户收藏列表
+  getFavorites: (params: { page?: number; size?: number; sort?: string }): Promise<ApiResponse<FavoriteListResponse>> => {
+    return request.get('/articles/favorites', { params })
   }
 } 

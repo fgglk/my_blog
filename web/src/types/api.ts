@@ -1,3 +1,5 @@
+import type { Article } from './article'
+
 // API响应接口
 export interface ApiResponse<T = any> {
   code: number
@@ -28,4 +30,23 @@ export interface LikeResponse {
 // 收藏响应
 export interface FavoriteResponse {
   favorited: boolean
+}
+
+// 收藏记录
+export interface Favorite {
+  id: number
+  article_id: number
+  user_id: number
+  created_at: string
+  updated_at: string
+  article: Article
+}
+
+// 收藏列表响应
+export interface FavoriteListResponse {
+  list: Favorite[]
+  total: number
+  page: number
+  size: number
+  totalPage: number
 } 
