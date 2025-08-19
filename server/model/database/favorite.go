@@ -1,10 +1,5 @@
 package database
 
-// Favorite 收藏模型
-// 设计说明：
-// 1. ArticleID: 外键，关联文章表
-// 2. Article: 关联字段，用于预加载文章信息，避免N+1查询
-// 3. 使用 omitempty 标签，在不需要文章详情时不会序列化该字段
 type Favorite struct {
 	BaseModel
 	UserID    uint    `gorm:"primaryKey;index" json:"user_id"`

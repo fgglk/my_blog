@@ -267,34 +267,34 @@
             <h3>快速链接</h3>
             <ul>
               <li><router-link to="/">首页</router-link></li>
-              <li><a href="#" @click.prevent>关于我</a></li>
-              <li><a href="#" @click.prevent>文章归档</a></li>
-              <li><a href="#" @click.prevent>分类目录</a></li>
-              <li><a href="#" @click.prevent>标签云</a></li>
+              <li><router-link to="/articles">所有文章</router-link></li>
+              <li><router-link to="/search">搜索</router-link></li>
+              <li><router-link to="/profile">个人中心</router-link></li>
+              <li><router-link to="/write">写文章</router-link></li>
             </ul>
           </div>
           
           <div class="footer-section">
-            <h3>资源链接</h3>
+            <h3>功能特色</h3>
             <ul>
-              <li><a href="#">学习资源</a></li>
-              <li><a href="#">工具推荐</a></li>
-              <li><a href="#">开发文档</a></li>
-              <li><a href="#">开源项目</a></li>
-              <li><a href="#">技术社区</a></li>
+              <li><a href="#" @click.prevent>Markdown 编辑器</a></li>
+              <li><a href="#" @click.prevent>文章分类</a></li>
+              <li><a href="#" @click.prevent>标签系统</a></li>
+              <li><a href="#" @click.prevent>评论互动</a></li>
+              <li><a href="#" @click.prevent>点赞收藏</a></li>
             </ul>
           </div>
           
           <div class="footer-section">
-            <h3>联系我</h3>
+            <h3>关于博客</h3>
             <div class="contact-info">
               <p>
-                <el-icon><Message /></el-icon>
-                contact@example.com
+                <el-icon><Document /></el-icon>
+                基于 Vue 3 + Go 开发
               </p>
               <p>
-                <el-icon><Location /></el-icon>
-                北京市海淀区中关村
+                <el-icon><Star /></el-icon>
+                开源项目，欢迎贡献
               </p>
             </div>
           </div>

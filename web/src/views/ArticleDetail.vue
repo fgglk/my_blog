@@ -53,15 +53,6 @@
             <!-- 文章主体 -->
             <article class="article">
               <div class="article-header">
-                <!-- 封面图片 -->
-                <div v-if="articleStore.currentArticle.cover_image" class="article-cover">
-                  <img 
-                    :src="articleStore.currentArticle.cover_image" 
-                    :alt="articleStore.currentArticle.title"
-                    class="cover-image"
-                  />
-                </div>
-                
                 <!-- 分类和阅读时间 -->
                 <div class="article-meta-top">
                   <div class="category-info">
@@ -1061,59 +1052,7 @@ onUnmounted(() => {
   margin-bottom: 50px;
 }
 
-// 封面图片样式
-.article-cover {
-  margin-bottom: 30px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  position: relative;
-  max-width: 100%;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 1;
-  }
-  
-  &:hover::before {
-    opacity: 1;
-  }
-  
-  .cover-image {
-    width: 100%;
-    height: 300px;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-    display: block;
-    max-width: 100%;
-  }
-  
-  &:hover .cover-image {
-    transform: scale(1.02);
-  }
-  
-  @media (max-width: 768px) {
-    margin-bottom: 25px;
-    
-    .cover-image {
-      height: 200px;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .cover-image {
-      height: 180px;
-    }
-  }
-}
+
 
 .article-meta-top {
   display: flex;
