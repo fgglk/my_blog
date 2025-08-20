@@ -440,14 +440,14 @@ const renderedContent = computed(() => {
   html = html.replace(
     /<pre class="hljs"><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
     (_match: string, lang: string, code: string) => {
-      const lines: string[] = code.split('\n').filter((line: string, _: number, arr: string[]) => line.trim() !== '' || arr.length === 1)
+      const lines: string[] = code.split('\n')
       
       const codeWithLineNumbers = lines.map((line: string, index: number) => {
         return `<div class="code-line">
           <span class="line-number">${index + 1}</span>
           <span class="line-content">${line || ' '}</span>
         </div>`
-      }).join('')
+      }).join('\n')
       
       const result = `
         <div class="code-block" data-language="${lang}">
@@ -456,7 +456,7 @@ const renderedContent = computed(() => {
             <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
           </div>
           <div class="code-content">
-            <pre class="hljs"><code class="language-${lang}">${codeWithLineNumbers}</code></pre>
+            ${codeWithLineNumbers}
           </div>
         </div>
       `
@@ -468,14 +468,14 @@ const renderedContent = computed(() => {
   html = html.replace(
     /<pre class="hljs"><code>([\s\S]*?)<\/code><\/pre>/g,
     (_match: string, code: string) => {
-      const lines: string[] = code.split('\n').filter((line: string, _: number, arr: string[]) => line.trim() !== '' || arr.length === 1)
+      const lines: string[] = code.split('\n')
       
       const codeWithLineNumbers = lines.map((line: string, index: number) => {
         return `<div class="code-line">
           <span class="line-number">${index + 1}</span>
           <span class="line-content">${line || ' '}</span>
         </div>`
-      }).join('')
+      }).join('\n')
       
       return `
         <div class="code-block" data-language="text">
@@ -484,7 +484,7 @@ const renderedContent = computed(() => {
             <button class="copy-btn" onclick="copyCode(this)">复制代码</button>
           </div>
           <div class="code-content">
-            <pre class="hljs"><code>${codeWithLineNumbers}</code></pre>
+            ${codeWithLineNumbers}
           </div>
         </div>
       `
@@ -1451,47 +1451,10 @@ onUnmounted(() => {
                     font-family: inherit !important;
                     font-size: inherit !important;
                     box-shadow: none !important;
-                    white-space: pre !important;
-                    word-wrap: normal !important;
-                    display: block !important;
-                    width: 100% !important;
-                    
-                    .code-line {
-                      display: flex !important;
-                      align-items: flex-start !important;
-                      min-height: 1.5em !important;
-                      background: #0d1117 !important;
-                      width: 100% !important;
-                      box-sizing: border-box !important;
-                      
-                      .line-number {
-                        background: #161b22 !important;
-                        color: #484f58 !important;
-                        padding: 0 8px 0 12px !important;
-                        font-size: 11px !important;
-                        line-height: 1.5 !important;
-                        text-align: right !important;
-                        user-select: none !important;
-                        font-family: inherit !important;
-                        min-width: 40px !important;
-                        width: 40px !important;
-                        font-weight: 500 !important;
-                        flex-shrink: 0 !important;
-                        border-right: 1px solid #30363d !important;
-                        box-sizing: border-box !important;
-                      }
-                      
-                      .line-content {
-                        color: #f0f6fc !important;
-                        padding: 0 12px 0 8px !important;
-                        flex: 1 !important;
-                        font-family: inherit !important;
-                        font-size: inherit !important;
-                        line-height: 1.5 !important;
-                        white-space: pre !important;
-                        background: #0d1117 !important;
-                      }
-                    }
+                    white-space: pre-wrap !important;
+                    word-wrap: break-word !important;
+                    display: inline !important;
+                    width: auto !important;
                   }
                 }
               }
@@ -1812,45 +1775,9 @@ onUnmounted(() => {
                   font-family: inherit !important;
                   font-size: inherit !important;
                   box-shadow: none !important;
-                  white-space: pre !important;
-                  word-wrap: normal !important;
+                  white-space: pre-wrap !important;
+                  word-wrap: break-word !important;
                   display: block !important;
-                  
-                                      .code-line {
-                      display: flex !important;
-                      align-items: flex-start !important;
-                      min-height: 1.5em !important;
-                      width: 100% !important;
-                      box-sizing: border-box !important;
-                      
-                      .line-number {
-                        background: #161b22 !important;
-                        color: #484f58 !important;
-                        padding: 0 8px 0 12px !important;
-                        font-size: 11px !important;
-                        line-height: 1.5 !important;
-                        text-align: right !important;
-                        user-select: none !important;
-                        font-family: inherit !important;
-                        min-width: 40px !important;
-                        width: 40px !important;
-                        font-weight: 500 !important;
-                        flex-shrink: 0 !important;
-                        border-right: 1px solid #30363d !important;
-                        box-sizing: border-box !important;
-                      }
-                    
-                    .line-content {
-                      color: #f0f6fc !important;
-                      padding: 0 12px 0 8px !important;
-                      flex: 1 !important;
-                      font-family: inherit !important;
-                      font-size: inherit !important;
-                      line-height: 1.5 !important;
-                      white-space: pre !important;
-                      background: #0d1117 !important;
-                    }
-                  }
                   
                   // GitHub Dark主题语法高亮颜色
                   .hljs-keyword { color: #ff7b72; }
@@ -1934,8 +1861,8 @@ onUnmounted(() => {
             font-family: inherit !important;
             font-size: inherit !important;
             box-shadow: none !important;
-            white-space: pre !important;
-            word-wrap: normal !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
             display: block !important;
           }
         
@@ -1962,8 +1889,8 @@ onUnmounted(() => {
               font-family: inherit;
               font-size: inherit;
               box-shadow: none;
-              white-space: pre-wrap;
-              word-wrap: break-word;
+              white-space: pre-wrap !important;
+              word-wrap: break-word !important;
             }
             
             // 滚动条样式
@@ -3352,74 +3279,54 @@ onUnmounted(() => {
     .code-content {
       background: #0d1117 !important;
       display: block !important;
+      color: #f0f6fc !important;
+      font-size: 11px !important;
+      line-height: 1.5 !important;
+      overflow-x: auto !important;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+      white-space: normal !important;
+      word-wrap: break-word !important;
       
-      pre {
+      .code-line {
+        display: flex !important;
+        align-items: flex-start !important;
+        min-height: 1.5em !important;
         background: #0d1117 !important;
-        color: #f0f6fc !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        border: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        font-size: 11px !important;
-        line-height: 1.5 !important;
-        overflow-x: auto !important;
-        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
-        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         
-        code {
-          background: none !important;
-          color: inherit !important;
-          padding: 0 !important;
-          border: none !important;
+        .line-number {
+          background: #161b22 !important;
+          color: #484f58 !important;
+          padding: 0 8px 0 12px !important;
+          font-size: 11px !important;
+          line-height: 1.5 !important;
+          text-align: right !important;
+          user-select: none !important;
+          font-family: inherit !important;
+          min-width: 40px !important;
+          width: 40px !important;
+          font-weight: 500 !important;
+          flex-shrink: 0 !important;
+          border-right: 1px solid #30363d !important;
+          box-sizing: border-box !important;
+          display: block !important;
+          position: relative !important;
+        }
+        
+        .line-content {
+          color: #f0f6fc !important;
+          padding: 0 12px 0 8px !important;
+          flex: 1 !important;
           font-family: inherit !important;
           font-size: inherit !important;
-          box-shadow: none !important;
+          line-height: 1.5 !important;
           white-space: pre !important;
-          word-wrap: normal !important;
+          background: #0d1117 !important;
           display: block !important;
-          width: 100% !important;
-          
-          .code-line {
-            display: flex !important;
-            align-items: flex-start !important;
-            min-height: 1.5em !important;
-            background: #0d1117 !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            
-            .line-number {
-              background: #161b22 !important;
-              color: #484f58 !important;
-              padding: 0 8px 0 12px !important;
-              font-size: 11px !important;
-              line-height: 1.5 !important;
-              text-align: right !important;
-              user-select: none !important;
-              font-family: inherit !important;
-              min-width: 40px !important;
-              width: 40px !important;
-              font-weight: 500 !important;
-              flex-shrink: 0 !important;
-              border-right: 1px solid #30363d !important;
-              box-sizing: border-box !important;
-              display: block !important;
-              position: relative !important;
-            }
-            
-            .line-content {
-              color: #f0f6fc !important;
-              padding: 0 12px 0 8px !important;
-              flex: 1 !important;
-              font-family: inherit !important;
-              font-size: inherit !important;
-              line-height: 1.5 !important;
-              white-space: pre !important;
-              background: #0d1117 !important;
-              display: block !important;
-              position: relative !important;
-            }
-          }
+          position: relative !important;
         }
       }
     }
