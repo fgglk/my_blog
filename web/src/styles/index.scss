@@ -169,6 +169,27 @@ html, body {
   height: 100% !important;
 }
 
+// 强制代码块样式 - 确保不被其他组件覆盖
+.article-detail .code-block {
+  background: #0d1117 !important;
+  color: #f0f6fc !important;
+  border: 1px solid #30363d !important;
+  border-radius: 6px !important;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+}
+
+.article-detail .code-block pre,
+.article-detail .code-block pre.hljs,
+.article-detail .code-block .code-content,
+.article-detail .code-block .code-line,
+.article-detail .code-block .line-number,
+.article-detail .code-block .line-content {
+  background: #0d1117 !important;
+  color: #f0f6fc !important;
+  border: none !important;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+}
+
 // 响应式设计
 @media (max-width: 768px) {
   .container {
