@@ -977,9 +977,7 @@ const handleScroll = () => {
   const dataCardRect = dataCard.getBoundingClientRect()
   const dataCardBottom = dataCardRect.bottom + window.scrollY
   
-  // 计算文章容器的底部位置
-  const articleRect = articleContainer.getBoundingClientRect()
-  const articleBottom = articleRect.bottom
+  // 计算视口高度
   const viewportHeight = window.innerHeight
   
   // 当前滚动位置
@@ -1004,12 +1002,8 @@ const handleScroll = () => {
   
   const articleContentRect = articleContent.getBoundingClientRect()
   const articleContentBottom = articleContentRect.bottom
-  
-  // 计算目录的高度和位置
-  const tocHeight = tocCard.offsetHeight
-  const tocTop = 140 // 目录的top值
-  
-  // 当文章内容底部接近视口底部时，开始让目录跟随滚动
+                  
+                  // 当文章内容底部接近视口底部时，开始让目录跟随滚动
   // 这样目录就不会显示在评论区
   if (articleContentBottom <= viewportHeight) {
     // 文章内容已经滚动完毕，隐藏目录
