@@ -225,6 +225,7 @@
                         active: activeHeading === heading.id,
                         [`level-${heading.level}`]: true
                       }"
+                      @click.prevent="scrollToHeading(heading.id)"
                     >
                       <span class="toc-bullet">{{ '•'.repeat(heading.level) }}</span>
                       <span class="toc-text">{{ heading.text }}</span>
@@ -436,6 +437,22 @@ const renderedContent = computed(() => {
   if (!articleStore.currentArticle) return ''
   let html = md.render(articleStore.currentArticle.content)
   
+  // 为标题添加ID属性
+  html = html.replace(
+    /<h([1-6])>(.*?)<\/h[1-6]>/g,
+    (_match: string, level: string, content: string) => {
+      // 生成标题ID
+      const text = content.replace(/<[^>]*>/g, '') // 移除HTML标签
+      const id = text
+        .toLowerCase()
+        .replace(/[^\w\u4e00-\u9fa5]+/g, '-') // 替换非字母数字字符为连字符
+        .replace(/^-+|-+$/g, '') // 移除首尾连字符
+        .substring(0, 50) // 限制长度
+      
+      return `<h${level} id="${id}">${content}</h${level}>`
+    }
+  )
+  
   // 处理代码块，添加语言标识和行号
   html = html.replace(
     /<pre class="hljs"><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
@@ -603,12 +620,17 @@ const tocItems = computed(() => {
   
   // 简单的标题提取逻辑
   const lines = content.split('\n')
-  lines.forEach((line, index) => {
+  lines.forEach((line) => {
     const match = line.match(/^(#{1,6})\s+(.+)$/)
     if (match) {
       const level = match[1].length
       const text = match[2].trim()
-      const id = `heading-${index}`
+      // 使用与标题ID相同的生成规则
+      const id = text
+        .toLowerCase()
+        .replace(/[^\w\u4e00-\u9fa5]+/g, '-') // 替换非字母数字字符为连字符
+        .replace(/^-+|-+$/g, '') // 移除首尾连字符
+        .substring(0, 50) // 限制长度
       headings.push({ id, text, level })
     }
   })
@@ -904,7 +926,8 @@ const handleScroll = () => {
   
   headings.forEach((heading) => {
     const rect = heading.getBoundingClientRect()
-    if (rect.top <= 100) {
+    // 当标题顶部距离视窗顶部小于100px时，认为该标题是当前标题
+    if (rect.top <= 100 && rect.bottom > 100) {
       currentHeading = heading.id
     }
   })
@@ -917,6 +940,14 @@ const handleScroll = () => {
 // 监听渲染内容变化
 watch(renderedContent, () => {
   fixImageStyles()
+  // 重新初始化滚动监听
+  nextTick(() => {
+    // 重新绑定滚动事件监听器
+    window.removeEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll)
+    // 立即执行一次滚动检测
+    handleScroll()
+  })
 }, { flush: 'post' })
 
     // 监听路由参数变化，重新加载文章数据
@@ -977,6 +1008,31 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
 })
+
+// 滚动到指定标题
+const scrollToHeading = (id: string) => {
+  const element = document.getElementById(id)
+  if (element) {
+    // 使用平滑滚动
+    element.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    })
+    
+    // 更新当前活动标题
+    activeHeading.value = id
+    
+    // 添加临时高亮效果
+    element.style.transition = 'background-color 0.3s ease'
+    element.style.backgroundColor = 'rgba(59, 130, 246, 0.1)'
+    
+    setTimeout(() => {
+      element.style.backgroundColor = ''
+    }, 2000)
+  } else {
+    console.warn(`标题元素未找到: ${id}`)
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -1070,7 +1126,6 @@ onUnmounted(() => {
   gap: 30px;
   align-items: start;
   max-width: 100%;
-  overflow: hidden;
   
   @media (max-width: 1200px) {
     grid-template-columns: minmax(0, 1fr) 220px;
@@ -1086,7 +1141,6 @@ onUnmounted(() => {
 // 文章主体
 .article {
   background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(10px);
   border-radius: 24px;
   padding: 60px 50px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
@@ -1096,7 +1150,6 @@ onUnmounted(() => {
   transition: all 0.3s ease;
   max-width: 100%;
   min-width: 0;
-  overflow: hidden;
   
   // 全局图片样式重置 - 排除头像
   img:not(.el-avatar img) {
@@ -1309,7 +1362,6 @@ onUnmounted(() => {
     overflow-wrap: break-word;
     word-wrap: break-word;
     max-width: 100%;
-    overflow: hidden;
     padding: 0 20px;
     margin-top: 30px;
     
@@ -1321,7 +1373,6 @@ onUnmounted(() => {
       overflow-wrap: break-word;
       word-wrap: break-word;
       max-width: 100%;
-      overflow: hidden;
         letter-spacing: 0.5px;
         text-align: justify;
       
@@ -1490,6 +1541,7 @@ onUnmounted(() => {
         font-weight: 700;
         line-height: 1.3;
          position: relative;
+         scroll-margin-top: 100px; // 确保滚动时不被导航栏遮挡
         
         &:first-child {
           margin-top: 0;
@@ -2212,17 +2264,16 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 30px;
+  align-self: start;
+  position: relative;
 }
 
 .data-card, .toc-card {
   background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  position: relative;
-  overflow: hidden;
   transition: all 0.3s ease;
   
   &:hover {
@@ -2238,6 +2289,48 @@ onUnmounted(() => {
     right: 0;
     height: 3px;
     background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #8b5cf6 100%);
+  }
+}
+
+// 数据卡片需要相对定位
+.data-card {
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+// 目录卡片特殊样式 - 固定在视口中
+.toc-card {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  z-index: 10;
+  
+  // 自定义滚动条样式
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 3px;
+    
+    &:hover {
+      background: rgba(59, 130, 246, 0.5);
+    }
+  }
+  
+  // 移动端优化
+  @media (max-width: 768px) {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
@@ -2451,22 +2544,16 @@ onUnmounted(() => {
       background: rgba(59, 130, 246, 0.1);
       border-color: rgba(59, 130, 246, 0.2);
       font-weight: 600;
+      transform: translateX(4px);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
       
       .toc-bullet {
         color: #3b82f6;
         transform: scale(1.3);
       }
       
-      &::before {
-        content: '';
-        position: absolute;
-        left: -4px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 3px;
-        height: 60%;
-        background: #3b82f6;
-        border-radius: 1.5px;
+      .toc-text {
+        color: #3b82f6;
       }
     }
   }
@@ -3116,22 +3203,32 @@ onUnmounted(() => {
     
     .related-articles-list {
       grid-template-columns: 1fr;
-      gap: 20px;
+    }
+  }
+  
+  // 目录移动端优化
+  .toc-card {
+    padding: 20px;
+    
+    .toc-content {
+      max-height: 300px;
     }
     
-    .related-article-card {
-      .article-content {
-        padding: 20px;
+    .toc-link {
+      padding: 6px 10px;
+      font-size: 13px;
+      
+      &.level-1 {
+        font-size: 14px;
+        padding: 8px 12px;
       }
       
-      .article-title {
-        font-size: 18px;
+      &.level-2 {
+        font-size: 13px;
       }
       
-      .article-footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+      &.level-3, &.level-4, &.level-5, &.level-6 {
+        font-size: 12px;
       }
     }
   }
