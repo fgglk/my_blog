@@ -205,34 +205,63 @@
                 </div>
               </div>
 
-              <!-- 目录导航 -->
-              <div v-if="showTOC" class="toc-card">
-                <h3 class="card-title">
-                  <el-icon><Document /></el-icon>
-                  文章目录
-                </h3>
-                <div class="toc-content">
-                  <div 
-                    class="toc-item" 
-                    v-for="(heading, index) in tocItems" 
-                    :key="index"
-                    :class="`toc-level-${heading.level}`"
-                  >
-                    <a 
-                      :href="`#${heading.id}`" 
-                      class="toc-link"
-                      :class="{ 
-                        active: activeHeading === heading.id,
-                        [`level-${heading.level}`]: true
-                      }"
-                      @click.prevent="scrollToHeading(heading.id)"
-                    >
-                      <span class="toc-bullet">{{ '•'.repeat(heading.level) }}</span>
-                      <span class="toc-text">{{ heading.text }}</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
+                      <!-- 目录导航 -->
+        <div v-if="showTOC" class="toc-card">
+          <h3 class="card-title">
+            <el-icon><Document /></el-icon>
+            文章目录
+          </h3>
+          <div class="toc-content">
+            <div
+              class="toc-item"
+              v-for="(heading, index) in tocItems"
+              :key="index"
+              :class="`toc-level-${heading.level}`"
+            >
+              <a
+                :href="`#${heading.id}`"
+                class="toc-link"
+                :class="{
+                  active: activeHeading === heading.id,
+                  [`level-${heading.level}`]: true
+                }"
+                @click.prevent="scrollToHeading(heading.id)"
+              >
+                <span class="toc-bullet">{{ '•'.repeat(heading.level) }}</span>
+                <span class="toc-text">{{ heading.text }}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 移动端目录导航 (正常流布局) -->
+        <div v-if="showTOC" class="toc-card mobile-toc">
+          <h3 class="card-title">
+            <el-icon><Document /></el-icon>
+            文章目录
+          </h3>
+          <div class="toc-content">
+            <div
+              class="toc-item"
+              v-for="(heading, index) in tocItems"
+              :key="index"
+              :class="`toc-level-${heading.level}`"
+            >
+              <a
+                :href="`#${heading.id}`"
+                class="toc-link"
+                :class="{
+                  active: activeHeading === heading.id,
+                  [`level-${heading.level}`]: true
+                }"
+                @click.prevent="scrollToHeading(heading.id)"
+              >
+                <span class="toc-bullet">{{ '•'.repeat(heading.level) }}</span>
+                <span class="toc-text">{{ heading.text }}</span>
+              </a>
+            </div>
+          </div>
+        </div>
             </aside>
           </div>
 
@@ -933,6 +962,64 @@ const handleScroll = () => {
   })
   
   activeHeading.value = currentHeading
+  
+  // 智能目录滚动逻辑
+  const tocCard = document.querySelector('.toc-card') as HTMLElement
+  if (!tocCard) return
+  
+  const dataCard = document.querySelector('.data-card') as HTMLElement
+  if (!dataCard) return
+  
+  const articleContainer = document.querySelector('.article-container') as HTMLElement
+  if (!articleContainer) return
+  
+  // 计算数据卡片的底部位置
+  const dataCardRect = dataCard.getBoundingClientRect()
+  const dataCardBottom = dataCardRect.bottom + window.scrollY
+  
+  // 计算文章容器的底部位置
+  const articleRect = articleContainer.getBoundingClientRect()
+  const articleBottom = articleRect.bottom
+  const viewportHeight = window.innerHeight
+  
+  // 当前滚动位置
+  const currentScrollY = window.scrollY
+  
+  // 计算目录应该开始显示的位置（数据卡片底部 + 30px间距）
+  const tocStartPosition = dataCardBottom + 30
+  
+  // 如果页面还没滚动到数据卡片底部，隐藏目录
+  if (currentScrollY + 140 < tocStartPosition) {
+    tocCard.style.opacity = '0'
+    tocCard.style.pointerEvents = 'none'
+    return
+  } else {
+    tocCard.style.opacity = '1'
+    tocCard.style.pointerEvents = 'auto'
+  }
+  
+  // 获取文章内容区域（不包括评论区）
+  const articleContent = document.querySelector('.article-content') as HTMLElement
+  if (!articleContent) return
+  
+  const articleContentRect = articleContent.getBoundingClientRect()
+  const articleContentBottom = articleContentRect.bottom
+  
+  // 计算目录的高度和位置
+  const tocHeight = tocCard.offsetHeight
+  const tocTop = 140 // 目录的top值
+  
+  // 当文章内容底部接近视口底部时，开始让目录跟随滚动
+  // 这样目录就不会显示在评论区
+  if (articleContentBottom <= viewportHeight) {
+    // 文章内容已经滚动完毕，隐藏目录
+    tocCard.style.opacity = '0'
+    tocCard.style.pointerEvents = 'none'
+  } else {
+    // 文章内容还在视口中，保持目录固定显示
+    tocCard.classList.remove('follow-scroll')
+    tocCard.style.transform = 'translateY(0)'
+  }
 }
 
 
@@ -1127,10 +1214,10 @@ const scrollToHeading = (id: string) => {
   align-items: start;
   max-width: 100%;
   
-  @media (max-width: 1200px) {
-    grid-template-columns: minmax(0, 1fr) 220px;
-    gap: 25px;
-  }
+      @media (max-width: 1200px) {
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 25px;
+    }
   
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -2264,8 +2351,6 @@ const scrollToHeading = (id: string) => {
   display: flex;
   flex-direction: column;
   gap: 30px;
-  align-self: start;
-  position: relative;
 }
 
 .data-card, .toc-card {
@@ -2292,20 +2377,29 @@ const scrollToHeading = (id: string) => {
   }
 }
 
-// 数据卡片需要相对定位
-.data-card {
-  position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(10px);
-}
-
-// 目录卡片特殊样式 - 固定在视口中
+// 目录卡片特殊样式 - 智能固定定位
 .toc-card {
-  position: sticky;
-  top: 20px;
-  max-height: calc(100vh - 40px);
+  position: fixed;
+  top: 140px; // 给数据卡片留出空间
+  right: calc((100vw - 1600px) / 2 + 15px); // 计算侧边栏位置
+  width: 240px;
+  max-height: calc(100vh - 160px);
   overflow-y: auto;
-  z-index: 10;
+  z-index: 100;
+  opacity: 0; // 初始隐藏
+  pointer-events: none; // 初始不可交互
+  transition: all 0.3s ease;
+  
+  // 当屏幕较小时调整位置
+  @media (max-width: 1630px) {
+    right: 15px;
+  }
+  
+  @media (max-width: 1200px) {
+    right: calc((100vw - 100%) / 2 + 15px);
+    width: 220px;
+    top: 120px;
+  }
   
   // 自定义滚动条样式
   &::-webkit-scrollbar {
@@ -2326,13 +2420,50 @@ const scrollToHeading = (id: string) => {
     }
   }
   
-  // 移动端优化
-  @media (max-width: 768px) {
-    position: static;
-    max-height: none;
-    overflow-y: visible;
+  // 移动端隐藏固定目录，显示正常流布局
+  @media (max-width: 900px) {
+    display: none;
+  }
+  
+  // 当需要跟随滚动时的样式
+  &.follow-scroll {
+    position: fixed !important;
+    top: auto !important;
+    right: calc((100vw - 1600px) / 2 + 15px) !important;
+    
+    @media (max-width: 1630px) {
+      right: 15px !important;
+    }
+    
+    @media (max-width: 1200px) {
+      right: calc((100vw - 100%) / 2 + 15px) !important;
+      width: 220px !important;
+    }
   }
 }
+
+// 移动端目录样式
+.mobile-toc {
+  display: none;
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  width: auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+  
+  @media (max-width: 900px) {
+    display: block;
+  }
+}
+
+// 数据卡片需要相对定位
+.data-card {
+  position: relative;
+  overflow: hidden;
+}
+
+
 
 .card-title {
   display: flex;
