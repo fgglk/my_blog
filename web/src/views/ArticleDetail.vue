@@ -1220,17 +1220,17 @@ const scrollToHeading = (id: string) => {
 }
 
 // 文章主体
-.article {
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 24px;
-  padding: 60px 50px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  position: relative;
-  min-height: 600px;
-  transition: all 0.3s ease;
-  max-width: 100%;
-  min-width: 0;
+  .article {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 100px 140px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e1e4e8;
+    position: relative;
+    min-height: 600px;
+    transition: all 0.3s ease;
+    max-width: 100%;
+    min-width: 0;
   
   // 全局图片样式重置 - 排除头像
   img:not(.el-avatar img) {
@@ -1245,7 +1245,7 @@ const scrollToHeading = (id: string) => {
   }
   
   @media (max-width: 768px) {
-    padding: 40px 30px;
+    padding: 60px 50px;
   }
   
   &:hover {
@@ -1253,32 +1253,23 @@ const scrollToHeading = (id: string) => {
     transform: translateY(-2px);
   }
   
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #8b5cf6 100%);
-  }
+
   
   h1.article-title {
-    font-size: 42px;
+    font-size: 52px;
     font-weight: 800;
     color: #1a1a1a;
-    margin: 30px 0;
+    margin: 0 0 80px 0;
     line-height: 1.3;
-    background: linear-gradient(135deg, #1a1a1a 0%, #374151 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
     text-align: center;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    border-bottom: 3px solid #e5e7eb;
+    padding-bottom: 30px;
     
     @media (max-width: 768px) {
-      font-size: 28px;
+      font-size: 36px;
+      margin-bottom: 50px;
       text-align: left;
     }
   }
@@ -1434,28 +1425,90 @@ const scrollToHeading = (id: string) => {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
   }
+  }
   
   .article-content {
-    font-size: 18px;
-    line-height: 1.8;
-    color: #1a1a1a;
-    word-break: break-word;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    max-width: 100%;
-    padding: 0 20px;
-    margin-top: 30px;
+  font-size: 22px;
+  line-height: 2.2;
+  color: #1a1a1a;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
+  padding: 0 40px;
+  margin-top: 50px;
     
-    .markdown-content {
-        font-size: 16px;
-      line-height: 1.8;
+          .markdown-content {
+        font-size: 22px;
+      line-height: 2.2;
       color: #1a1a1a;
       word-break: break-word;
       overflow-wrap: break-word;
       word-wrap: break-word;
-      max-width: 100%;
-        letter-spacing: 0.5px;
-        text-align: justify;
+      max-width: 90ch;
+        margin: 0 auto;
+        letter-spacing: 0;
+        text-align: left;
+        
+        // 允许代码块突破容器宽度限制
+        .code-block,
+        div.code-block {
+          max-width: none !important;
+          width: max-content !important;
+          min-width: 100% !important;
+          margin-left: calc(-1 * (100vw - 90ch) / 2) !important;
+          margin-right: calc(-1 * (100vw - 90ch) / 2) !important;
+          padding-left: calc((100vw - 90ch) / 2) !important;
+          padding-right: calc((100vw - 90ch) / 2) !important;
+          
+          .code-content {
+            max-width: none !important;
+            width: max-content !important;
+            min-width: 100% !important;
+            
+            pre {
+              max-width: none !important;
+              width: max-content !important;
+              min-width: 100% !important;
+              overflow-x: scroll !important;
+              overflow-y: visible !important;
+              white-space: pre !important;
+              word-wrap: normal !important;
+              display: block !important;
+              
+              // 强制显示滚动条
+              &::-webkit-scrollbar {
+                height: 12px !important;
+                width: 12px !important;
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                background: #161b22 !important;
+              }
+              
+              &::-webkit-scrollbar-track {
+                background: #161b22 !important;
+                border-radius: 6px !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                display: block !important;
+              }
+              
+              &::-webkit-scrollbar-thumb {
+                background: #484f58 !important;
+                border-radius: 6px !important;
+                border: 2px solid #161b22 !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                display: block !important;
+                
+                &:hover {
+                  background: #6e7681 !important;
+                }
+              }
+            }
+          }
+        }
       
       // 强制重置文章图片样式，排除头像
       img:not(.el-avatar img) {
@@ -1477,18 +1530,144 @@ const scrollToHeading = (id: string) => {
         
         // 移动端响应式处理，确保两侧空白对称
         @media (max-width: 768px) {
-          max-width: calc(100% - 30px) !important;
-          margin: 15px 15px !important;
+          max-width: 100% !important;
+          margin: 15px 0 !important;
         }
         
         @media (max-width: 480px) {
-          max-width: calc(100% - 20px) !important;
-          margin: 10px 10px !important;
+          max-width: 100% !important;
+          margin: 10px 0 !important;
         }
       }
       
       // 移动端标题样式调整
       @media (max-width: 768px) {
+      .markdown-content {
+        max-width: 100% !important;
+        margin: 0 !important;
+        
+        // 移动端代码块样式调整
+        .code-block,
+        div.code-block {
+          max-width: none !important;
+          width: 100vw !important;
+          min-width: 100vw !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          overflow: visible !important;
+          box-sizing: border-box !important;
+          
+          .code-content {
+            max-width: none !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            white-space: pre !important;
+            word-wrap: normal !important;
+            display: block !important;
+            
+            // 强制显示滚动条
+            &::-webkit-scrollbar {
+              height: 12px !important;
+              width: 12px !important;
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+              background: #161b22 !important;
+            }
+            
+            &::-webkit-scrollbar-track {
+              background: #161b22 !important;
+              border-radius: 6px !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+              display: block !important;
+            }
+            
+            &::-webkit-scrollbar-thumb {
+              background: #484f58 !important;
+              border-radius: 6px !important;
+              border: 2px solid #161b22 !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+              display: block !important;
+              
+              &:hover {
+                background: #6e7681 !important;
+              }
+            }
+          }
+          
+          .code-line {
+            max-width: none !important;
+            width: max-content !important;
+            min-width: 100% !important;
+            white-space: pre !important;
+            word-wrap: normal !important;
+            display: flex !important;
+            
+            .line-content {
+              max-width: none !important;
+              width: max-content !important;
+              min-width: 100% !important;
+              white-space: pre !important;
+              word-wrap: normal !important;
+              overflow-x: visible !important;
+              overflow-y: visible !important;
+            }
+          }
+        }
+        
+        // 移动端兼容旧的pre样式
+        pre:not(.code-block pre) {
+          max-width: none !important;
+          width: 100vw !important;
+          min-width: 100vw !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          overflow-x: auto !important;
+          overflow-y: visible !important;
+          white-space: pre !important;
+          word-wrap: normal !important;
+          display: block !important;
+          
+          // 强制显示滚动条
+          &::-webkit-scrollbar {
+            height: 12px !important;
+            width: 12px !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            background: #161b22 !important;
+          }
+          
+          &::-webkit-scrollbar-track {
+            background: #161b22 !important;
+            border-radius: 6px !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: block !important;
+          }
+          
+          &::-webkit-scrollbar-thumb {
+            background: #484f58 !important;
+            border-radius: 6px !important;
+            border: 2px solid #161b22 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: block !important;
+            
+            &:hover {
+              background: #6e7681 !important;
+            }
+          }
+        }
+      }
       h1, h2, h3, h4, h5, h6 {
           &::before {
             display: none; // 在移动端隐藏左侧装饰线
@@ -1496,40 +1675,39 @@ const scrollToHeading = (id: string) => {
         }
         
         h1 {
-          font-size: 28px;
-        margin-bottom: 20px;
+          font-size: 36px;
+        margin-bottom: 40px;
         }
         
         h2 {
-          font-size: 24px;
-          margin-bottom: 18px;
+          font-size: 32px;
+          margin-bottom: 35px;
         }
         
         h3 {
-          font-size: 20px;
-          margin-bottom: 15px;
+          font-size: 28px;
+          margin-bottom: 30px;
         }
         
         p {
-          font-size: 16px;
-          line-height: 1.8;
-          margin-bottom: 20px;
+          font-size: 20px;
+          line-height: 2.1;
+          margin-bottom: 35px;
           
           &:first-of-type {
-            font-size: 17px;
-            padding: 15px;
-            margin-bottom: 25px;
+            font-size: 21px;
+            margin-bottom: 40px;
           }
         }
         
                                                                                                                                                .markdown-content .code-block,
                                                                                                                                                .code-block,
                                                                                                                                                div.code-block {
-              margin: 15px 0 !important;
+              margin: 20px 0 !important;
               background: #0d1117 !important;
               border: 1px solid #30363d !important;
               border-radius: 6px !important;
-              overflow: hidden !important;
+              overflow: visible !important;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
               
               .code-header {
@@ -1571,8 +1749,10 @@ const scrollToHeading = (id: string) => {
                   box-shadow: none !important;
                   font-size: 11px !important;
                   line-height: 1.5 !important;
-                  overflow-x: auto !important;
+                  overflow-x: scroll !important;
                   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+                  min-width: 100% !important;
+                  width: max-content !important;
                   display: block !important;
                   
                   code {
@@ -1583,8 +1763,8 @@ const scrollToHeading = (id: string) => {
                     font-family: inherit !important;
                     font-size: inherit !important;
                     box-shadow: none !important;
-                    white-space: pre-wrap !important;
-                    word-wrap: break-word !important;
+                    white-space: pre !important;
+                    word-wrap: normal !important;
                     display: inline !important;
                     width: auto !important;
                   }
@@ -1592,208 +1772,139 @@ const scrollToHeading = (id: string) => {
               }
             }
           
-          pre:not(.code-block pre) {
-            padding: 15px;
-            font-size: 12px;
-            margin: 15px 0;
-          }
+                  pre:not(.code-block pre) {
+          padding: 18px;
+          font-size: 14px;
+          margin: 18px 0;
+        }
         
         blockquote {
-          padding: 20px;
-          margin: 20px 0;
-          font-size: 16px;
+          padding: 30px;
+          margin: 35px 0;
+          font-size: 19px;
         }
         
         table {
-          font-size: 14px;
-          margin: 20px 0;
+          font-size: 18px;
+          margin: 35px 0;
           
-          th, td {
-            padding: 12px 15px;
-          }
+                  th, td {
+          padding: 18px 22px;
+        }
         }
       }
       
-             // 标题样式优化
-       h1, h2, h3, h4, h5, h6 {
-         margin-top: 30px;
-         margin-bottom: 15px;
-        color: #1a1a1a;
-        font-weight: 700;
-        line-height: 1.3;
-         position: relative;
-         scroll-margin-top: 100px; // 确保滚动时不被导航栏遮挡
+                   // 标题样式优化
+      h1, h2, h3, h4, h5, h6 {
+        margin-top: 80px;
+        margin-bottom: 40px;
+       color: #1a1a1a;
+       font-weight: 700;
+       line-height: 1.5;
+        position: relative;
+        scroll-margin-top: 100px; // 确保滚动时不被导航栏遮挡
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
         
         &:first-child {
           margin-top: 0;
         }
-         
-         // 添加左侧装饰线
-         &::before {
-           content: '';
-           position: absolute;
-           left: -15px;
-           top: 0;
-           bottom: 0;
-           width: 3px;
-           background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-           border-radius: 2px;
-        }
       }
       
       h1 {
-         font-size: 28px;
-         border-bottom: 2px solid rgba(59, 130, 246, 0.2);
-        padding-bottom: 10px;
-         margin-bottom: 20px;
-         
-         &::before {
-           width: 4px;
-           left: -18px;
-         }
+         font-size: 40px;
+         margin-bottom: 45px;
+         border-bottom: 3px solid #e5e7eb;
+         padding-bottom: 20px;
        }
        
        h2 {
-         font-size: 24px;
-         border-bottom: 1px solid rgba(59, 130, 246, 0.15);
-        padding-bottom: 8px;
-         margin-bottom: 18px;
-         
-         &::before {
-           width: 3px;
-           left: -16px;
-         }
+         font-size: 36px;
+         margin-bottom: 40px;
+         border-bottom: 3px solid #e5e7eb;
+         padding-bottom: 18px;
        }
        
        h3 {
-         font-size: 20px;
-         margin-bottom: 15px;
-         
-         &::before {
-           width: 3px;
-           left: -15px;
-         }
+         font-size: 32px;
+         margin-bottom: 35px;
        }
        
        h4 {
-         font-size: 18px;
-         margin-bottom: 12px;
-         
-         &::before {
-           width: 2px;
-           left: -13px;
-         }
+         font-size: 28px;
+         margin-bottom: 30px;
        }
        
        h5 {
-         font-size: 16px;
-         margin-bottom: 10px;
-         
-         &::before {
-           width: 2px;
-           left: -12px;
-         }
+         font-size: 24px;
+         margin-bottom: 25px;
        }
        
        h6 {
-         font-size: 15px;
-         margin-bottom: 10px;
-         
-         &::before {
-           width: 2px;
-           left: -11px;
-         }
+         font-size: 20px;
+         margin-bottom: 20px;
        }
       
              // 段落样式优化
       p {
-        margin-bottom: 20px;
-        line-height: 1.8;
-        color: #374151;
+        margin-bottom: 45px;
+        line-height: 2.3;
+        color: #1a1a1a;
         word-wrap: break-word;
         overflow-wrap: break-word;
-         font-size: 16px;
+         font-size: 21px;
          text-align: justify;
-         letter-spacing: 0.3px;
+         letter-spacing: 0.8px;
+         text-indent: 0;
+         max-width: 100%;
+         text-rendering: optimizeLegibility;
+         -webkit-font-smoothing: antialiased;
          
          // 首段特殊样式
          &:first-of-type {
-           font-size: 17px;
+           font-size: 22px;
            color: #4b5563;
            font-weight: 500;
-           line-height: 1.9;
-           margin-bottom: 25px;
-           padding: 15px 20px;
-           background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(6, 182, 212, 0.03) 100%);
-           border-radius: 12px;
+           line-height: 2.4;
+           margin-bottom: 50px;
+           padding: 30px;
+           background: #f8f9fa;
+           border-radius: 8px;
            border-left: 4px solid #3b82f6;
          }
        }
       
              // 列表样式优化
       ul, ol {
-         margin: 15px 0 15px 20px;
-        padding-left: 20px;
+         margin: 40px 0 40px 50px;
+        padding-left: 40px;
       
       li {
-           margin-bottom: 8px;
-           line-height: 1.6;
-        color: #374151;
-           font-size: 15px;
-           position: relative;
-           
-           // 自定义列表标记
-           &::before {
-             content: '';
-             position: absolute;
-             left: -15px;
-             top: 8px;
-             width: 5px;
-             height: 5px;
-             background: #3b82f6;
-             border-radius: 50%;
-           }
-         }
-       }
-      
-             // 有序列表特殊样式
-       ol {
-         counter-reset: list-counter;
-         
-         li {
-           counter-increment: list-counter;
-           
-           &::before {
-             content: counter(list-counter);
-             background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-             color: white;
-             width: 18px;
-             height: 18px;
-             border-radius: 50%;
-             display: flex;
-             align-items: center;
-             justify-content: center;
-             font-size: 11px;
-             font-weight: bold;
-             top: 2px;
-             left: -18px;
-           }
+           margin-bottom: 25px;
+           line-height: 2.1;
+        color: #1a1a1a;
+           font-size: 20px;
+           padding-left: 10px;
+           text-rendering: optimizeLegibility;
+           -webkit-font-smoothing: antialiased;
          }
        }
       
              // 引用块样式优化
       blockquote {
-         margin: 20px 0;
-         padding: 15px 20px;
+         margin: 50px 0;
+         padding: 30px 35px;
          background: #f8f9fa;
-         border-left: 4px solid #3b82f6;
+         border-left: 5px solid #3b82f6;
         border-radius: 8px;
         color: #374151;
         font-style: italic;
-         font-size: 15px;
-         line-height: 1.6;
+         font-size: 20px;
+         line-height: 2.1;
          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
          position: relative;
+         text-rendering: optimizeLegibility;
+         -webkit-font-smoothing: antialiased;
          
          &::before {
            content: '"';
@@ -1815,20 +1926,20 @@ const scrollToHeading = (id: string) => {
       
       
       
-          // 强制覆盖其他组件的pre样式
-          .article-detail pre.hljs,
-          .article-detail .code-block pre,
-          .article-detail .code-block pre.hljs {
-            background: #0d1117 !important;
-            color: #f0f6fc !important;
-            border: none !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
-          }
+                // 强制覆盖其他组件的pre样式
+      .article-detail pre.hljs,
+      .article-detail .code-block pre,
+      .article-detail .code-block pre.hljs {
+        background: #0d1117 !important;
+        color: #f0f6fc !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+        margin: 30px 0 !important;
+      }
           
-          // 代码块样式优化 - GitHub风格深色主题 - 最高优先级
-          // 使用更具体的选择器来确保不被其他组件样式覆盖
+          // 代码块样式优化 - 简洁风格
           .article-detail .markdown-content .code-block,
           .article-detail .code-block,
           .article-detail div.code-block,
@@ -1838,12 +1949,15 @@ const scrollToHeading = (id: string) => {
             background: #0d1117 !important;
             border: 1px solid #30363d !important;
             border-radius: 6px !important;
-            margin: 20px 0 !important;
-            overflow: hidden !important;
-            font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace !important;
+            margin: 30px 0 !important;
+            overflow: visible !important;
+            font-family: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
             position: relative !important;
             display: block !important;
+            max-width: none !important;
+            width: max-content !important;
+            min-width: 100% !important;
             
             .code-header {
               display: flex !important;
@@ -1886,6 +2000,10 @@ const scrollToHeading = (id: string) => {
             
             .code-content {
               background: #0d1117 !important;
+              overflow: visible !important;
+              max-width: none !important;
+              width: max-content !important;
+              min-width: 100% !important;
               
               pre {
                 background: #0d1117 !important;
@@ -1897,8 +2015,78 @@ const scrollToHeading = (id: string) => {
                 box-shadow: none !important;
                 font-size: 13px !important;
                 line-height: 1.5 !important;
-                overflow-x: auto !important;
-                font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+                overflow-x: scroll !important;
+                overflow-y: visible !important;
+                font-family: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+                min-width: 100% !important;
+                width: max-content !important;
+                display: block !important;
+                white-space: pre !important;
+                word-wrap: normal !important;
+                
+                      // 强制显示滚动条
+      &::-webkit-scrollbar {
+        height: 12px !important;
+        width: 12px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: #161b22 !important;
+        border-radius: 6px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: #484f58 !important;
+        border-radius: 6px !important;
+        border: 2px solid #161b22 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        
+        &:hover {
+          background: #6e7681 !important;
+        }
+      }
+      
+      // 确保内容可以滚动
+      &:hover {
+        overflow-x: scroll !important;
+      }
+      
+      // 强制显示滚动条，无论内容是否溢出
+      &::-webkit-scrollbar {
+        height: 12px !important;
+        width: 12px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background: #161b22 !important;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: #161b22 !important;
+        border-radius: 6px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: #484f58 !important;
+        border-radius: 6px !important;
+        border: 2px solid #161b22 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
+        
+        &:hover {
+          background: #6e7681 !important;
+        }
+      }
                 
                 code {
                   background: none !important;
@@ -1908,9 +2096,9 @@ const scrollToHeading = (id: string) => {
                   font-family: inherit !important;
                   font-size: inherit !important;
                   box-shadow: none !important;
-                  white-space: pre-wrap !important;
-                  word-wrap: break-word !important;
-                  display: block !important;
+                  white-space: pre !important;
+                  word-wrap: normal !important;
+                  display: inline !important;
                   
                   // GitHub Dark主题语法高亮颜色
                   .hljs-keyword { color: #ff7b72; }
@@ -1980,8 +2168,57 @@ const scrollToHeading = (id: string) => {
             box-shadow: none !important;
             font-size: 11px !important;
             line-height: 1.5 !important;
-            overflow-x: auto !important;
+            overflow-x: scroll !important;
+            overflow-y: visible !important;
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+            min-width: 100% !important;
+            width: max-content !important;
+            display: block !important;
+            white-space: pre !important;
+            word-wrap: normal !important;
+            
+            // 强制显示滚动条
+            &::-webkit-scrollbar {
+              height: 12px !important;
+              width: 12px !important;
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            
+            &::-webkit-scrollbar-track {
+              background: #161b22 !important;
+              border-radius: 6px !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            
+            &::-webkit-scrollbar-thumb {
+              background: #484f58 !important;
+              border-radius: 6px !important;
+              border: 2px solid #161b22 !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+              
+              &:hover {
+                background: #6e7681 !important;
+              }
+            }
+            
+            // 确保内容可以滚动
+            &:hover {
+              overflow-x: scroll !important;
+            }
+            
+            // 强制显示滚动条，即使内容不需要滚动
+            &::-webkit-scrollbar {
+              height: 12px !important;
+              width: 12px !important;
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+              background: #161b22 !important;
+            }
           }
           
           .markdown-content .code-block pre.hljs code,
@@ -1994,23 +2231,29 @@ const scrollToHeading = (id: string) => {
             font-family: inherit !important;
             font-size: inherit !important;
             box-shadow: none !important;
-            white-space: pre-wrap !important;
-            word-wrap: break-word !important;
-            display: block !important;
+            white-space: pre !important;
+            word-wrap: normal !important;
+            display: inline !important;
           }
         
                                    // 兼容旧的pre样式（如果没有被code-block包装）
           pre:not(.code-block pre) {
             background: #0d1117;
             color: #f0f6fc;
-            padding: 16px;
+            padding: 20px;
             border-radius: 6px;
-        overflow-x: auto;
-            font-size: 13px;
-            line-height: 1.5;
+        overflow-x: scroll !important;
+        overflow-y: visible !important;
+        min-width: 100% !important;
+        width: max-content !important;
+        display: block !important;
+        white-space: pre !important;
+        word-wrap: normal !important;
+            font-size: 14px;
+            line-height: 1.6;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             border: 1px solid #30363d;
-            margin: 20px 0;
+            margin: 30px 0;
             position: relative;
             font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
         
@@ -2022,47 +2265,63 @@ const scrollToHeading = (id: string) => {
               font-family: inherit;
               font-size: inherit;
               box-shadow: none;
-              white-space: pre-wrap !important;
-              word-wrap: break-word !important;
+              white-space: pre !important;
+              word-wrap: normal !important;
             }
             
-            // 滚动条样式
+            // 强制显示滚动条
             &::-webkit-scrollbar {
-              height: 8px;
+              height: 12px !important;
+              width: 12px !important;
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
             }
             
             &::-webkit-scrollbar-track {
-              background: #161b22;
-              border-radius: 4px;
+              background: #161b22 !important;
+              border-radius: 6px !important;
+              visibility: visible !important;
+              opacity: 1 !important;
             }
             
             &::-webkit-scrollbar-thumb {
-              background: #30363d;
-              border-radius: 4px;
+              background: #484f58 !important;
+              border-radius: 6px !important;
+              border: 2px solid #161b22 !important;
+              visibility: visible !important;
+              opacity: 1 !important;
               
               &:hover {
-                background: #484f58;
+                background: #6e7681 !important;
               }
+            }
+            
+            // 确保内容可以滚动
+            &:hover {
+              overflow-x: scroll !important;
             }
           }
        
                // 行内代码样式
         code:not(pre code) {
           background: #f1f3f4;
-          padding: 3px 8px;
+          padding: 6px 12px;
           border-radius: 6px;
           font-size: 0.9em;
           color: #d73a49;
           font-weight: 600;
           border: 1px solid #e1e4e8;
-          font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          text-rendering: optimizeLegibility;
+          -webkit-font-smoothing: antialiased;
+          font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
           transition: all 0.2s ease;
           
           &:hover {
-            background: #e8eaed;
+            background: #e1e4e8;
             transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
           }
         }
       
@@ -2070,35 +2329,44 @@ const scrollToHeading = (id: string) => {
       table {
         width: 100%;
         border-collapse: collapse;
-        margin: 30px 0;
-        font-size: 16px;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        margin: 50px 0;
+        font-size: 20px;
+        border: 1px solid #e1e4e8;
         background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
       }
       
       th, td {
         border: 1px solid #e5e7eb;
-        padding: 18px 20px;
+        padding: 25px 30px;
         text-align: left;
         vertical-align: middle;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
       }
       
       th {
-        background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
         color: #fff;
         font-weight: 700;
-        font-size: 16px;
+        font-size: 20px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
       }
       
       td {
         background: #fff;
         color: #374151;
-        font-size: 15px;
-        line-height: 1.6;
+        font-size: 19px;
+        line-height: 1.8;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
       }
       
       tr:nth-child(even) td {
@@ -2113,7 +2381,7 @@ const scrollToHeading = (id: string) => {
       hr {
         border: none;
         border-top: 3px dashed rgba(59, 130, 246, 0.4);
-        margin: 40px 0;
+        margin: 50px 0;
         position: relative;
         
         &::after {
@@ -2223,8 +2491,7 @@ const scrollToHeading = (id: string) => {
       }
     }
   }
-}
-
+ 
 .article-actions {
   border-top: 2px solid rgba(59, 130, 246, 0.1);
   padding-top: 40px;
@@ -3468,7 +3735,7 @@ const scrollToHeading = (id: string) => {
     background: #0d1117 !important;
     border: 1px solid #30363d !important;
     border-radius: 6px !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
     position: relative !important;
     display: block !important;
@@ -3500,14 +3767,40 @@ const scrollToHeading = (id: string) => {
     
     .code-content {
       background: #0d1117 !important;
+      overflow: visible !important;
       display: block !important;
       color: #f0f6fc !important;
       font-size: 11px !important;
       line-height: 1.5 !important;
-      overflow-x: auto !important;
+      overflow-x: scroll !important;
+      overflow-y: visible !important;
       font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
-      white-space: normal !important;
-      word-wrap: break-word !important;
+      min-width: 100% !important;
+      width: max-content !important;
+      white-space: pre !important;
+      word-wrap: normal !important;
+      
+      // 强制显示滚动条
+      &::-webkit-scrollbar {
+        height: 12px !important;
+        width: 12px !important;
+        display: block !important;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: #161b22 !important;
+        border-radius: 6px !important;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: #484f58 !important;
+        border-radius: 6px !important;
+        border: 2px solid #161b22 !important;
+        
+        &:hover {
+          background: #6e7681 !important;
+        }
+      }
       
       .code-line {
         display: flex !important;
@@ -3550,6 +3843,134 @@ const scrollToHeading = (id: string) => {
           display: block !important;
           position: relative !important;
         }
+      }
+    }
+  }
+}
+
+// 全局代码块溢出修复 - 更全面的解决方案
+.article-detail,
+.markdown-content {
+  // 代码块容器
+  .code-block,
+  div.code-block {
+    max-width: none !important;
+    width: 100vw !important;
+    min-width: 100vw !important;
+    margin-left: calc(-1 * (100vw - 90ch) / 2) !important;
+    margin-right: calc(-1 * (100vw - 90ch) / 2) !important;
+    padding-left: calc((100vw - 90ch) / 2) !important;
+    padding-right: calc((100vw - 90ch) / 2) !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    
+    // 代码内容区域
+    .code-content {
+      max-width: none !important;
+      width: 100% !important;
+      min-width: 100% !important;
+      overflow-x: auto !important;
+      overflow-y: visible !important;
+      white-space: pre !important;
+      word-wrap: normal !important;
+      display: block !important;
+      
+      // 强制显示滚动条
+      &::-webkit-scrollbar {
+        height: 12px !important;
+        width: 12px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background: #161b22 !important;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: #161b22 !important;
+        border-radius: 6px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: #484f58 !important;
+        border-radius: 6px !important;
+        border: 2px solid #161b22 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
+        
+        &:hover {
+          background: #6e7681 !important;
+        }
+      }
+    }
+    
+    // 代码行
+    .code-line {
+      max-width: none !important;
+      width: max-content !important;
+      min-width: 100% !important;
+      white-space: pre !important;
+      word-wrap: normal !important;
+      display: flex !important;
+      
+      .line-content {
+        max-width: none !important;
+        width: max-content !important;
+        min-width: 100% !important;
+        white-space: pre !important;
+        word-wrap: normal !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+      }
+    }
+  }
+  
+  // 兼容旧的pre样式
+  pre:not(.code-block pre) {
+    max-width: none !important;
+    width: 100vw !important;
+    min-width: 100vw !important;
+    margin-left: calc(-1 * (100vw - 90ch) / 2) !important;
+    margin-right: calc(-1 * (100vw - 90ch) / 2) !important;
+    padding-left: calc((100vw - 90ch) / 2) !important;
+    padding-right: calc((100vw - 90ch) / 2) !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    white-space: pre !important;
+    word-wrap: normal !important;
+    display: block !important;
+    
+    // 强制显示滚动条
+    &::-webkit-scrollbar {
+      height: 12px !important;
+      width: 12px !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      background: #161b22 !important;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #161b22 !important;
+      border-radius: 6px !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      display: block !important;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #484f58 !important;
+      border-radius: 6px !important;
+      border: 2px solid #161b22 !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      display: block !important;
+      
+      &:hover {
+        background: #6e7681 !important;
       }
     }
   }
