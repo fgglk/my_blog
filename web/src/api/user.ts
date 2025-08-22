@@ -5,7 +5,9 @@ import type {
   LoginRequest, 
   RegisterRequest, 
   UpdateUserRequest, 
-  ChangePasswordRequest 
+  ChangePasswordRequest,
+  UserListRequest,
+  UserListResponse
 } from '@/types/user'
 
 // 用户API
@@ -46,7 +48,7 @@ export const userApi = {
   },
 
   // 获取用户列表
-  getUserList: (params: { page: number; size: number }): Promise<ApiResponse> => {
+  getUserList: (params: UserListRequest): Promise<ApiResponse<UserListResponse>> => {
     return request.get('/users/list', { params })
   },
 

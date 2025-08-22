@@ -40,4 +40,18 @@ export interface UpdateUserRequest {
 export interface ChangePasswordRequest {
   oldPassword: string
   newPassword: string
+}
+
+// 用户列表请求参数
+export interface UserListRequest {
+  page: number
+  size: number
+}
+
+// 用户列表响应
+export interface UserListResponse {
+  list: UserInfo[]
+  total: number
+  page: number
+  pageSize: number
 } 

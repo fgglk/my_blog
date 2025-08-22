@@ -20,6 +20,18 @@ export const useUserStore = defineStore('user', () => {
   const initUserState = async () => {
     getTokenFromStorage() // Call to update token.value
     
+    // 尝试从localStorage恢复用户信息
+    const storedUserInfo = localStorage.getItem('userInfo')
+    if (storedUserInfo) {
+      try {
+        const user = JSON.parse(storedUserInfo)
+        userInfo.value = user
+      } catch (error) {
+        console.error('解析存储的用户信息失败:', error)
+        localStorage.removeItem('userInfo')
+      }
+    }
+    
     if (token.value) {
       await getUserInfo()
     }
@@ -28,6 +40,8 @@ export const useUserStore = defineStore('user', () => {
   // 设置用户信息
   const setUserInfo = (info: UserInfo) => {
     userInfo.value = info
+    // 同时保存到localStorage，供路由守卫使用
+    localStorage.setItem('userInfo', JSON.stringify(info))
   }
 
   // 设置token
@@ -41,6 +55,7 @@ export const useUserStore = defineStore('user', () => {
     userInfo.value = null
     token.value = ''
     localStorage.removeItem('token')
+    localStorage.removeItem('userInfo')
   }
 
   // 获取当前token（实时从localStorage获取）

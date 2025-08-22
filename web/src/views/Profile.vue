@@ -126,13 +126,20 @@
                     <span class="action-text">发布新文章</span>
                     <el-icon class="arrow-icon"><ArrowRight /></el-icon>
                   </div>
-                  <div class="quick-action-item" @click="$router.push('/favorites')">
-                    <div class="action-icon">
-                      <el-icon><Collection /></el-icon>
-                    </div>
-                    <span class="action-text">我的收藏</span>
-                    <el-icon class="arrow-icon"><ArrowRight /></el-icon>
-                  </div>
+                                     <div class="quick-action-item" @click="$router.push('/favorites')">
+                     <div class="action-icon">
+                       <el-icon><Collection /></el-icon>
+                     </div>
+                     <span class="action-text">我的收藏</span>
+                     <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+                   </div>
+                   <div v-if="userStore.userInfo?.role === 'admin'" class="quick-action-item" @click="goToUserManagement">
+                     <div class="action-icon">
+                       <el-icon><UserFilled /></el-icon>
+                     </div>
+                     <span class="action-text">用户管理</span>
+                     <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+                   </div>
 
                 </div>
               </div>
@@ -312,7 +319,7 @@ import { articleApi } from '@/api/article'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Camera, Edit, Lock, Document, View, Star, ChatDotRound, Plus, 
-  ArrowRight, Delete, Collection, EditPen
+  ArrowRight, Delete, Collection, EditPen, UserFilled
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import type { Article } from '@/types/article'
@@ -590,12 +597,18 @@ const avatarUrlWithCacheBust = computed(() => {
     return dayjs(date).format('YYYY-MM-DD')
   }
   
-  // 退出登录
-  const handleLogout = () => {
-    userStore.logout()
-    ElMessage.success('退出成功')
-    router.push('/')
-  }
+     // 跳转到用户管理
+   const goToUserManagement = () => {
+     console.log('点击用户管理，当前用户角色:', userStore.userInfo?.role)
+     router.push('/user-management')
+   }
+   
+   // 退出登录
+   const handleLogout = () => {
+     userStore.logout()
+     ElMessage.success('退出成功')
+     router.push('/')
+   }
 
   // 加载用户信息
   const loadUserInfo = async (userId: number) => {
