@@ -359,6 +359,7 @@ const activeTab = ref('published')
   // 用户统计信息
   const userStats = reactive({
     articleCount: 0,
+    draftCount: 0,
     totalViews: 0,
     totalLikes: 0,
     totalComments: 0
@@ -622,14 +623,17 @@ const avatarUrlWithCacheBust = computed(() => {
       console.log('开始加载用户文章...')
       let response
       if (isViewingOtherUser.value) {
-        response = await articleApi.getArticlesByUserId(currentUserId.value!)
+        // 获取其他用户的所有文章（不分页）
+        response = await articleApi.getArticlesByUserId(currentUserId.value!, 1, 1000)
         console.log('获取其他用户文章响应:', response)
         if (response.code === 0 && response.data) {
           allUserArticles.value = response.data.list || []
           console.log('其他用户文章列表:', allUserArticles.value)
           filterArticlesByTab()
+          // 对于其他用户，只统计已发布的文章
           const publishedArticles = allUserArticles.value.filter(article => article.status === '1' || article.is_published)
           userStats.articleCount = publishedArticles.length
+          userStats.draftCount = 0 // 其他用户看不到草稿
           userStats.totalViews = publishedArticles.reduce((sum, article) => sum + article.view_count, 0)
           userStats.totalLikes = publishedArticles.reduce((sum, article) => sum + article.like_count, 0)
           userStats.totalComments = publishedArticles.reduce((sum, article) => sum + article.comment_count, 0)
@@ -638,20 +642,27 @@ const avatarUrlWithCacheBust = computed(() => {
           console.log('获取其他用户文章失败:', response.msg)
         }
       } else {
-        response = await articleStore.getUserArticles()
+        // 获取当前用户的所有文章（直接调用API，不分页）
+        response = await articleApi.getUserArticles(1, 1000)
         console.log('获取当前用户文章响应:', response)
-        if (response.success && response.data) {
+        if (response.code === 0 && response.data) {
           allUserArticles.value = response.data.list || []
           console.log('当前用户文章列表:', allUserArticles.value)
+          console.log('当前用户文章总数:', response.data.total)
           filterArticlesByTab()
+          // 对于当前用户，分别统计已发布和草稿文章
           const publishedArticles = allUserArticles.value.filter(article => article.status === '1' || article.is_published)
+          const draftArticles = allUserArticles.value.filter(article => article.status === '0' || !article.is_published)
           userStats.articleCount = publishedArticles.length
+          userStats.draftCount = draftArticles.length
           userStats.totalViews = publishedArticles.reduce((sum, article) => sum + article.view_count, 0)
           userStats.totalLikes = publishedArticles.reduce((sum, article) => sum + article.like_count, 0)
           userStats.totalComments = publishedArticles.reduce((sum, article) => sum + article.comment_count, 0)
           console.log('当前用户统计信息:', userStats)
+          console.log('发布文章数:', publishedArticles.length)
+          console.log('草稿文章数:', draftArticles.length)
         } else {
-          console.log('获取当前用户文章失败:', response.message)
+          console.log('获取当前用户文章失败:', response.msg)
         }
       }
     } catch (error) {

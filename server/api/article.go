@@ -541,8 +541,12 @@ func (a *ArticleApi) GetUserArticles(c *gin.Context) {
 	if page <= 0 {
 		page = 1
 	}
-	if size <= 0 || size > 100 {
+	if size <= 0 {
 		size = 10
+	}
+	// 允许更大的size用于获取用户所有文章，但限制最大值防止性能问题
+	if size > 1000 {
+		size = 1000
 	}
 
 	// 调用服务层获取用户文章
@@ -596,8 +600,12 @@ func (a *ArticleApi) GetArticlesByUserID(c *gin.Context) {
 	if page <= 0 {
 		page = 1
 	}
-	if size <= 0 || size > 100 {
+	if size <= 0 {
 		size = 10
+	}
+	// 允许更大的size用于获取用户所有文章，但限制最大值防止性能问题
+	if size > 1000 {
+		size = 1000
 	}
 
 	// 调用服务层获取用户文章（只获取已发布的文章）
