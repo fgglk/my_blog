@@ -94,8 +94,8 @@ export const userApi = {
   },
 
   // 删除用户（管理员）
-  deleteUserById: (userId: string): Promise<ApiResponse> => {
-    return request.delete(`/users/${userId}`)
+  deleteUserById: (userId: number): Promise<ApiResponse> => {
+    return request.delete('/users/delete', { data: { id: userId } })
   },
 
   // 更新用户状态

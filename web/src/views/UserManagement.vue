@@ -557,7 +557,7 @@ const deleteUser = async (user: UserInfo) => {
     )
     
     loading.value = true
-    const response = await userApi.deleteUserById(user.uuid)
+    const response = await userApi.deleteUserById(user.id)
     
     if (response.code === 0) {
       ElMessage.success('删除用户成功')
