@@ -50,7 +50,7 @@ export interface UserListRequest {
   page: number
   size: number
   keyword?: string
-  status?: string
+  status?: number
   sortBy?: string
 }
 

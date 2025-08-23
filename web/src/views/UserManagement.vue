@@ -32,12 +32,11 @@
               
               <!-- 全局操作栏 -->
               <div class="global-actions">
-                                 <el-select v-model="filterStatus" placeholder="所有用户" class="filter-select" @change="handleFilterChange">
-                   <el-option label="所有用户" value="all" />
-                   <el-option label="活跃用户" value="active" />
-                   <el-option label="待审核用户" value="pending" />
-                   <el-option label="已禁用用户" value="disabled" />
-                 </el-select>
+                                                 <el-select v-model="filterStatus" placeholder="所有用户" class="filter-select" @change="handleFilterChange">
+                  <el-option label="所有用户" value="all" />
+                  <el-option label="活跃用户" value="active" />
+                  <el-option label="已禁用用户" value="disabled" />
+                </el-select>
                 
                 <el-button class="filter-btn">
                   <el-icon><Filter /></el-icon>
@@ -108,20 +107,7 @@
                 </div>
               </div>
 
-              <div class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-main">
-                    <span class="stat-number">{{ pendingUsers }}</span>
-                    <div class="stat-trend">
-                      <span class="trend-text">需要处理</span>
-                    </div>
-                  </div>
-                  <span class="stat-label">待审核</span>
-                </div>
-                <div class="stat-icon pending">
-                  <el-icon><QuestionFilled /></el-icon>
-                </div>
-              </div>
+
             </div>
           </div>
 
@@ -347,7 +333,7 @@ import {
   Search, User, UserFilled, 
   View, Setting, Delete,
   Filter, Download, Plus, ArrowUp, ArrowDown,
-  QuestionFilled, Edit, Check, Close
+  Edit, Check, Close
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import type { UserInfo, UserListResponse } from '@/types/user'
@@ -382,9 +368,7 @@ const activeUsers = computed(() => {
   return users.value.filter(user => user.status === 1).length
 })
 
-const pendingUsers = computed(() => {
-  return users.value.filter(user => user.status === 0).length
-})
+
 
 // 获取用户列表
 const loadUsers = async () => {
@@ -403,7 +387,17 @@ const loadUsers = async () => {
     
     // 添加状态筛选
     if (filterStatus.value !== 'all') {
-      params.status = filterStatus.value
+      // 将前端筛选值转换为后端期望的数字
+      switch (filterStatus.value) {
+        case 'active':
+          params.status = 1
+          break
+        case 'disabled':
+          params.status = 0
+          break
+        default:
+          params.status = filterStatus.value
+      }
     }
     
     // 添加排序

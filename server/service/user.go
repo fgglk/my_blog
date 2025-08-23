@@ -211,6 +211,10 @@ func (u *UserService) GetUserList(listReq request.UserListRequest) (err error, l
 	if listReq.Email != "" {
 		query = query.Where("email LIKE ?", "%"+listReq.Email+"%")
 	}
+	// 添加状态筛选
+	if listReq.Status != nil {
+		query = query.Where("status = ?", *listReq.Status)
+	}
 
 	// 获取总数
 	query.Count(&total)
