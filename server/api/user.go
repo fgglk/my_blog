@@ -1,12 +1,12 @@
 package api
 
 import (
-	"strconv"
 	"server/global"
 	"server/model/request"
 	"server/model/response"
 	"server/service"
 	"server/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -404,4 +404,66 @@ func (u *UserApi) UploadAvatar(c *gin.Context) {
 	response.OkWithDetailed(gin.H{
 		"url": avatarURL,
 	}, "头像上传成功", c)
+}
+
+// ApproveUser 启用用户
+func (u *UserApi) ApproveUser(c *gin.Context) {
+	// 获取当前用户ID
+	currentUserID, err := utils.GetUserID(c)
+	if err != nil {
+		response.NoAuth(err.Error(), c)
+		return
+	}
+
+	// 只有管理员可以启用用户
+	if !utils.IsAdmin(currentUserID) {
+		response.FailWithMessage("没有权限进行此操作", c)
+		return
+	}
+
+	// 获取要启用的用户UUID
+	userUUID := c.Param("uuid")
+	if userUUID == "" {
+		response.FailWithMessage("用户UUID不能为空", c)
+		return
+	}
+
+	// 调用Service层启用用户
+	if err := userService.ApproveUser(userUUID); err != nil {
+		response.FailWithMessage("启用用户失败: "+err.Error(), c)
+		return
+	}
+
+	response.OkWithMessage("启用用户成功", c)
+}
+
+// RejectUser 禁用用户
+func (u *UserApi) RejectUser(c *gin.Context) {
+	// 获取当前用户ID
+	currentUserID, err := utils.GetUserID(c)
+	if err != nil {
+		response.NoAuth(err.Error(), c)
+		return
+	}
+
+	// 只有管理员可以禁用用户
+	if !utils.IsAdmin(currentUserID) {
+		response.FailWithMessage("没有权限进行此操作", c)
+		return
+	}
+
+	// 获取要禁用的用户UUID
+	userUUID := c.Param("uuid")
+	if userUUID == "" {
+		response.FailWithMessage("用户UUID不能为空", c)
+		return
+	}
+
+	// 调用Service层禁用用户
+	if err := userService.RejectUser(userUUID); err != nil {
+		response.FailWithMessage("禁用用户失败: "+err.Error(), c)
+		return
+	}
+
+	response.OkWithMessage("禁用用户成功", c)
 }

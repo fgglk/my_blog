@@ -11,6 +11,8 @@ import (
 	"server/utils"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type UserService struct{}
@@ -86,6 +88,20 @@ func (u *UserService) Login(loginReq request.LoginRequest) (err error, user data
 	// 验证密码
 	if !utils.BcryptCheck(loginReq.Password, user.Password) {
 		return errors.New("密码错误"), user
+	}
+
+	// 检查用户状态
+	if user.Status == 0 {
+		return errors.New("用户已被禁用，请联系管理员"), user
+	}
+
+	// 更新最后登录时间
+	now := time.Now()
+	if err = global.DB.Model(&user).Update("last_login_at", now).Error; err != nil {
+		// 即使更新失败也不影响登录，只记录错误
+		global.ZapLog.Error("更新最后登录时间失败", zap.Error(err))
+	} else {
+		user.LastLoginAt = &now
 	}
 
 	return nil, user
@@ -251,4 +267,36 @@ func (u *UserService) UploadAvatar(file *multipart.FileHeader, userID uint) (str
 	}
 
 	return avatarURL, nil
+}
+
+// ApproveUser 启用用户
+func (u *UserService) ApproveUser(userUUID string) error {
+	// 根据UUID查找用户
+	var user database.User
+	if err := global.DB.Where("uuid = ?", userUUID).First(&user).Error; err != nil {
+		return errors.New("用户不存在")
+	}
+
+	// 启用用户（设置状态为1）
+	if err := global.DB.Model(&user).Update("status", 1).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RejectUser 禁用用户
+func (u *UserService) RejectUser(userUUID string) error {
+	// 根据UUID查找用户
+	var user database.User
+	if err := global.DB.Where("uuid = ?", userUUID).First(&user).Error; err != nil {
+		return errors.New("用户不存在")
+	}
+
+	// 禁用用户（设置状态为0）
+	if err := global.DB.Model(&user).Update("status", 0).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

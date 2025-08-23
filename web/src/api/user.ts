@@ -81,5 +81,25 @@ export const userApi = {
         'Content-Type': 'multipart/form-data'
       }
     })
+  },
+
+  // 审核通过用户
+  approveUser: (userId: string): Promise<ApiResponse> => {
+    return request.put(`/users/${userId}/approve`)
+  },
+
+  // 拒绝用户
+  rejectUser: (userId: string): Promise<ApiResponse> => {
+    return request.put(`/users/${userId}/reject`)
+  },
+
+  // 删除用户（管理员）
+  deleteUserById: (userId: string): Promise<ApiResponse> => {
+    return request.delete(`/users/${userId}`)
+  },
+
+  // 更新用户状态
+  updateUserStatus: (userId: string, status: string): Promise<ApiResponse> => {
+    return request.put(`/users/${userId}/status`, { status })
   }
 } 

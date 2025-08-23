@@ -1,14 +1,17 @@
 // 用户信息接口
 export interface UserInfo {
   id: number
+  uuid: string
   username: string
   email: string
   nickname: string
   avatar: string
   bio?: string
   role: string
-  createdAt: string
-  updatedAt: string
+  status: number // 用户状态：0-禁用, 1-正常
+  created_at: string
+  updated_at: string
+  last_login_at?: string
 }
 
 // 登录请求参数
@@ -46,6 +49,9 @@ export interface ChangePasswordRequest {
 export interface UserListRequest {
   page: number
   size: number
+  keyword?: string
+  status?: string
+  sortBy?: string
 }
 
 // 用户列表响应

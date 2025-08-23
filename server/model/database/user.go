@@ -2,6 +2,7 @@ package database
 
 import (
 	"server/model/appType"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -20,6 +21,7 @@ type User struct {
 	Address             string            `gorm:"size:255" json:"address"`
 	Role                appType.RoleType  `gorm:"size:20;default:'user'" json:"role"`
 	LoginMethod         appType.LoginType `gorm:"size:20;default:'password'" json:"login_method"`
+	LastLoginAt         *time.Time        `json:"last_login_at"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {

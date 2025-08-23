@@ -19,6 +19,7 @@ type UserResponse struct {
 	Role      appType.RoleType   `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	LastLoginAt *time.Time `json:"last_login_at"`
 }
 
 // LoginResponse 登录响应
@@ -41,6 +42,7 @@ func ToUserResponse(user database.User) UserResponse {
 		Role:      user.Role,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
+		LastLoginAt: user.LastLoginAt,
 	}
 }
 
