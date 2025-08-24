@@ -22,7 +22,7 @@ import (
 func UploadAvatar(file io.Reader, header *multipart.FileHeader, userID uint) (string, string, database.Media, error) {
 	// 生成唯一文件名，使用用户ID和时间戳
 	fileName := fmt.Sprintf("avatar_%d_%d%s", userID, time.Now().Unix(), filepath.Ext(header.Filename))
-	
+
 	// 头像存储在 avatars 目录
 	uploadPath := "uploads/avatars"
 
@@ -78,7 +78,7 @@ func UploadAvatar(file io.Reader, header *multipart.FileHeader, userID uint) (st
 func UploadImage(file io.Reader, header *multipart.FileHeader, userID uint) (string, string, database.Media, error) {
 	// 生成唯一文件名
 	fileName := fmt.Sprintf("image_%d_%d%s", userID, time.Now().Unix(), filepath.Ext(header.Filename))
-	
+
 	// 文章图片存储在 images 目录
 	uploadPath := "uploads/images"
 
@@ -143,7 +143,7 @@ func GetImageByID(id uint) (database.Media, error) {
 }
 
 // GetImageList 获取图片列表
-func GetImageList(pageInfo request.PageInfo, userID uint) ([]database.Media, int64, error) {
+func GetImageList(req request.ImageListRequest, userID uint) ([]database.Media, int64, error) {
 	var list []database.Media
 	var total int64
 	db := global.DB.Model(&database.Media{}).Where("user_id = ?", userID)
@@ -151,10 +151,35 @@ func GetImageList(pageInfo request.PageInfo, userID uint) ([]database.Media, int
 	// 只查询图片类型
 	db = db.Where("file_type LIKE ?", "image/%")
 
+	// 搜索功能
+	if req.Keyword != "" {
+		db = db.Where("filename LIKE ?", "%"+req.Keyword+"%")
+	}
+
+	// 排序
+	orderBy := "created_at"
+	if req.SortBy != "" {
+		switch req.SortBy {
+		case "createdAt":
+			orderBy = "created_at"
+		case "size":
+			orderBy = "file_size"
+		case "filename":
+			orderBy = "filename"
+		default:
+			orderBy = "created_at"
+		}
+	}
+
+	orderDirection := "DESC"
+	if req.SortOrder == "asc" {
+		orderDirection = "ASC"
+	}
+
 	// 分页
-	offset := (pageInfo.Page - 1) * pageInfo.Size
+	offset := (req.Page - 1) * req.Size
 	db.Count(&total)
-	if err := db.Order("created_at DESC").Offset(offset).Limit(pageInfo.Size).Find(&list).Error; err != nil {
+	if err := db.Order(orderBy + " " + orderDirection).Offset(offset).Limit(req.Size).Find(&list).Error; err != nil {
 		return list, total, err
 	}
 

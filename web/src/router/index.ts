@@ -73,6 +73,12 @@ const routes: RouteRecordRaw[] = [
     name: 'UserManagement',
     component: () => import('@/views/UserManagement.vue'),
     meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/image-management',
+    name: 'ImageManagement',
+    component: () => import('@/views/ImageManagement.vue'),
+    meta: { title: '图片管理', requiresAuth: true }
   }
 ]
 

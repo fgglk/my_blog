@@ -95,9 +95,9 @@ func UploadImage(c *gin.Context) {
 
 	response.OkWithDetailed(response.ImageResponse{
 		ID:         imageIDUint,
-		URL:        imageURL,        // 使用正确的API URL
-		UploadTime: media.CreatedAt, // 添加上传时间
-		UpdateTime: media.UpdatedAt, // 添加更新时间
+		URL:        imageURL,                                      // 使用正确的API URL
+		UploadTime: media.CreatedAt.Format("2006-01-02 15:04:05"), // 添加上传时间
+		UpdateTime: media.UpdatedAt.Format("2006-01-02 15:04:05"), // 添加更新时间
 	}, "图片上传成功", c)
 }
 
@@ -129,28 +129,31 @@ func GetImageList(c *gin.Context) {
 		return
 	}
 
-	var pageInfo request.PageInfo
-	_ = c.ShouldBindQuery(&pageInfo)
+	var req request.ImageListRequest
+	_ = c.ShouldBindQuery(&req)
 
 	// 设置分页默认值
-	if pageInfo.Page <= 0 {
-		pageInfo.Page = 1
+	if req.Page <= 0 {
+		req.Page = 1
 	}
-	if pageInfo.Size <= 0 || pageInfo.Size > 100 {
-		pageInfo.Size = 10
+	if req.Size <= 0 || req.Size > 100 {
+		req.Size = 10
 	}
 
-	list, total, err := service.GetImageList(pageInfo, userID)
+	list, total, err := service.GetImageList(req, userID)
 	if err != nil {
 		response.FailWithMessage("获取图片列表失败", c)
 		return
 	}
 
-	response.OkWithDetailed(response.PageResult{
-		List:     list,
+	// 转换为前端需要的格式
+	imageList := response.ToImageInfoList(list)
+
+	response.OkWithDetailed(response.ImageListResponse{
+		List:     imageList,
 		Total:    total,
-		Page:     pageInfo.Page,
-		PageSize: pageInfo.Size,
+		Page:     req.Page,
+		PageSize: req.Size,
 	}, "获取成功", c)
 }
 

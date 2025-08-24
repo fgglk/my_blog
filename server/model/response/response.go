@@ -1,8 +1,9 @@
 package response
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 基础响应结构体
@@ -10,6 +11,14 @@ type Response struct {
 	Code int         `json:"code"`
 	Data interface{} `json:"data,omitempty"`
 	Msg  string      `json:"msg"`
+}
+
+// ImageResponse 图片上传响应
+type ImageResponse struct {
+	ID         uint   `json:"id"`
+	URL        string `json:"url"`
+	UploadTime string `json:"upload_time"`
+	UpdateTime string `json:"update_time"`
 }
 
 // 状态码常量

@@ -140,6 +140,13 @@
                      <span class="action-text">用户管理</span>
                      <el-icon class="arrow-icon"><ArrowRight /></el-icon>
                    </div>
+                   <div class="quick-action-item" @click="$router.push('/image-management')">
+                     <div class="action-icon">
+                       <el-icon><Picture /></el-icon>
+                     </div>
+                     <span class="action-text">图片管理</span>
+                     <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+                   </div>
 
                 </div>
               </div>
@@ -319,7 +326,7 @@ import { articleApi } from '@/api/article'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Camera, Edit, Lock, Document, View, Star, ChatDotRound, Plus, 
-  ArrowRight, Delete, Collection, EditPen, UserFilled
+  ArrowRight, Delete, Collection, EditPen, UserFilled, Picture
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import type { Article } from '@/types/article'
