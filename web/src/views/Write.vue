@@ -193,28 +193,63 @@
               <!-- 文章封面图 -->
               <div class="form-section">
                 <label class="form-label">文章封面图</label>
-                                   <div class="cover-upload">
-                     <el-upload
-                       class="upload-area"
-                       drag
-                       action="#"
-                       :auto-upload="false"
-                       :on-change="handleCoverChange"
-                       :show-file-list="false"
-                     >
-                       <div v-if="!articleForm.coverImage" class="upload-content">
-                         <el-icon class="upload-icon"><Upload /></el-icon>
-                         <p>点击上传或拖放图片到此处</p>
-                       </div>
-                       <div v-else class="uploaded-image">
-                         <img :src="articleForm.coverImage" alt="封面图" />
-                         <div class="image-overlay">
-                           <el-button type="primary" size="small" @click="removeCoverImage">更换图片</el-button>
-                         </div>
-                       </div>
-                     </el-upload>
-                     <p class="upload-tip">支持 JPG, PNG, GIF (最大10MB)</p>
-                   </div>
+                <div class="cover-upload">
+                  <div v-if="!articleForm.coverImage" class="cover-options">
+                    <div class="option-card" @click="triggerCoverUpload">
+                      <div class="option-icon">
+                        <el-icon><Upload /></el-icon>
+                      </div>
+                      <div class="option-content">
+                        <h3 class="option-title">上传新图片</h3>
+                        <p class="option-description">从本地上传一张新的图片作为封面</p>
+                      </div>
+                      <div class="option-arrow">
+                        <el-icon><ArrowRight /></el-icon>
+                      </div>
+                    </div>
+                    
+                    <div class="option-card" @click="showCoverImageSelector = true">
+                      <div class="option-icon">
+                        <el-icon><Picture /></el-icon>
+                      </div>
+                      <div class="option-content">
+                        <h3 class="option-title">从已上传图片中选择</h3>
+                        <p class="option-description">从您之前上传的图片中选择一张作为封面</p>
+                      </div>
+                      <div class="option-arrow">
+                        <el-icon><ArrowRight /></el-icon>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-else class="cover-preview">
+                    <div class="cover-image-container">
+                      <img :src="articleForm.coverImage" alt="封面图" class="cover-image" />
+                      <div class="cover-overlay">
+                        <div class="cover-actions">
+                          <el-button type="primary" size="small" @click="showCoverOptions = true">
+                            <el-icon><Edit /></el-icon>
+                            更换封面
+                          </el-button>
+                          <el-button type="danger" size="small" @click="removeCoverImage">
+                            <el-icon><Delete /></el-icon>
+                            移除
+                          </el-button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <input
+                    ref="coverInput"
+                    type="file"
+                    accept="image/*"
+                    style="display: none"
+                    @change="handleCoverChange"
+                  />
+                  
+                  <p class="upload-tip">支持 JPG, PNG, GIF (最大10MB)</p>
+                </div>
               </div>
             </el-form>
           </div>
@@ -394,6 +429,52 @@
     </template>
   </el-dialog>
 
+  <!-- 封面选择选项对话框 -->
+  <el-dialog
+    v-model="showCoverOptions"
+    title="更换封面"
+    width="450px"
+    :close-on-click-modal="false"
+    class="cover-options-dialog"
+  >
+    <div class="cover-options">
+      <div class="option-card" @click="triggerCoverUpload">
+        <div class="option-icon">
+          <el-icon><Upload /></el-icon>
+        </div>
+        <div class="option-content">
+          <h3 class="option-title">上传新图片</h3>
+          <p class="option-description">从本地上传一张新的图片作为封面</p>
+        </div>
+        <div class="option-arrow">
+          <el-icon><ArrowRight /></el-icon>
+        </div>
+      </div>
+      
+      <div class="option-card" @click="showCoverImageSelector = true; showCoverOptions = false">
+        <div class="option-icon">
+          <el-icon><Picture /></el-icon>
+        </div>
+        <div class="option-content">
+          <h3 class="option-title">从已上传图片中选择</h3>
+          <p class="option-description">从您之前上传的图片中选择一张作为封面</p>
+        </div>
+        <div class="option-arrow">
+          <el-icon><ArrowRight /></el-icon>
+        </div>
+      </div>
+    </div>
+  </el-dialog>
+
+  <!-- 封面图片选择对话框 -->
+  <ImageSelector
+    v-model="showCoverImageSelector"
+    title="选择封面图片"
+    confirm-text="选择此图片作为封面"
+    @confirm="handleCoverImageSelect"
+    @cancel="showCoverImageSelector = false"
+  />
+
   <!-- 预览对话框 -->
   <el-dialog
     v-model="previewDialogVisible"
@@ -456,8 +537,9 @@ import MarkdownIt from 'markdown-it'
 import {
   House, Search, Edit, ArrowDown, Link, Message, Collection,
   Refresh, InfoFilled, Upload, Promotion, View,
-  Check, Picture, User, Clock, Document, SwitchButton
+  Check, Picture, User, Clock, Document, SwitchButton, ArrowRight, Delete
 } from '@element-plus/icons-vue'
+import ImageSelector from '@/components/ImageSelector.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -701,11 +783,21 @@ const redo = () => {
   ElMessage.info('重做功能开发中')
 }
 
+// 触发封面图片上传
+const triggerCoverUpload = () => {
+  coverInput.value?.click()
+  showCoverOptions.value = false
+}
+
 // 处理封面图上传
-const handleCoverChange = async (file: any) => {
+const handleCoverChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
   try {
     // 调用图片上传API
-    const response = await articleApi.uploadImage(file.raw)
+    const response = await articleApi.uploadImage(file)
     if (response.code === 0) {
       articleForm.coverImage = response.data.url
       ElMessage.success('封面图上传成功')
@@ -715,6 +807,22 @@ const handleCoverChange = async (file: any) => {
   } catch (error) {
     console.error('封面图上传失败:', error)
     ElMessage.error('封面图上传失败')
+  } finally {
+    // 清空文件输入框，允许重复选择同一文件
+    if (target) {
+      target.value = ''
+    }
+  }
+}
+
+// 处理封面图片选择
+const handleCoverImageSelect = async (image: any) => {
+  try {
+    articleForm.coverImage = image.url
+    ElMessage.success('封面图片设置成功')
+  } catch (error) {
+    console.error('设置封面图片失败:', error)
+    ElMessage.error('封面图片设置失败')
   }
 }
 
@@ -728,6 +836,11 @@ const removeCoverImage = () => {
 const imageUploadDialogVisible = ref(false)
 const uploadedImageUrl = ref<string | null>(null)
 const imageAltText = ref<string | null>(null)
+
+// 封面图片选择相关状态
+const showCoverOptions = ref(false)
+const showCoverImageSelector = ref(false)
+const coverInput = ref<HTMLInputElement>()
 
 // 显示图片上传对话框
 const showImageUploadDialog = () => {
@@ -1777,6 +1890,231 @@ onUnmounted(() => {
   }
 }
 
+// 封面图片选择样式
+.cover-upload {
+  .cover-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    
+    .option-card {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+      background: white;
+      border: 2px solid #f3f4f6;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      &:hover {
+        border-color: #3b82f6;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        
+        .option-icon {
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          transform: scale(1.05);
+        }
+        
+        .option-arrow {
+          color: #3b82f6;
+          transform: translateX(4px);
+        }
+      }
+      
+      .option-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        color: white;
+        margin-right: 16px;
+        transition: all 0.3s ease;
+        
+        .el-icon {
+          font-size: 20px;
+        }
+      }
+      
+      .option-content {
+        flex: 1;
+        text-align: left;
+        
+        .option-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0 0 4px 0;
+          line-height: 1.4;
+        }
+        
+        .option-description {
+          font-size: 14px;
+          color: #6b7280;
+          margin: 0;
+          line-height: 1.5;
+        }
+      }
+      
+      .option-arrow {
+        color: #9ca3af;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+    }
+  }
+  
+  .cover-preview {
+    .cover-image-container {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      
+      .cover-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+      }
+      
+      .cover-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.3s ease;
+        
+        .cover-actions {
+          display: flex;
+          gap: 12px;
+          
+          .el-button {
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+          }
+        }
+      }
+      
+      &:hover .cover-overlay {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+// 封面选择选项对话框样式
+.cover-options-dialog {
+  :deep(.el-dialog__body) {
+    padding: 0;
+  }
+  
+  :deep(.el-dialog__header) {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    
+    .el-dialog__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+  }
+}
+
+.cover-options {
+  padding: 24px;
+  
+  .option-card {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 16px;
+    background: white;
+    border: 2px solid #f3f4f6;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    &:hover {
+      border-color: #3b82f6;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      
+      .option-icon {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        transform: scale(1.05);
+      }
+      
+      .option-arrow {
+        color: #3b82f6;
+        transform: translateX(4px);
+      }
+    }
+    
+    .option-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+      color: white;
+      margin-right: 16px;
+      transition: all 0.3s ease;
+      
+      .el-icon {
+        font-size: 20px;
+      }
+    }
+    
+    .option-content {
+      flex: 1;
+      text-align: left;
+      
+      .option-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 4px 0;
+        line-height: 1.4;
+      }
+      
+      .option-description {
+        font-size: 14px;
+        color: #6b7280;
+        margin: 0;
+        line-height: 1.5;
+      }
+    }
+    
+    .option-arrow {
+      color: #9ca3af;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+  }
+}
+
 @media (max-width: 1200px) {
   .content-layout {
     grid-template-columns: 1fr;
@@ -1816,6 +2154,56 @@ onUnmounted(() => {
   
   .user-section {
     gap: 15px;
+  }
+  
+  // 封面图片选择移动端适配
+  .cover-upload {
+    .cover-options {
+      gap: 12px;
+      
+      .option-card {
+        padding: 16px;
+        
+        .option-icon {
+          width: 40px;
+          height: 40px;
+          margin-right: 12px;
+          
+          .el-icon {
+            font-size: 18px;
+          }
+        }
+        
+        .option-content {
+          .option-title {
+            font-size: 15px;
+          }
+          
+          .option-description {
+            font-size: 13px;
+          }
+        }
+      }
+    }
+    
+    .cover-preview {
+      .cover-image-container {
+        .cover-image {
+          height: 150px;
+        }
+        
+        .cover-overlay {
+          .cover-actions {
+            flex-direction: column;
+            gap: 8px;
+            
+            .el-button {
+              width: 100%;
+            }
+          }
+        }
+      }
+    }
   }
   
   // 确保按钮组在移动端正确显示
