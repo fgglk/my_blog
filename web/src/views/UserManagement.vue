@@ -43,12 +43,7 @@
                   筛选
                 </el-button>
                 
-                <el-button class="export-btn">
-                  <el-icon><Download /></el-icon>
-                  导出
-                </el-button>
-                
-                <el-button type="primary" class="add-user-btn">
+                <el-button type="primary" class="add-user-btn" @click="showAddUserDialog = true">
                   <el-icon><Plus /></el-icon>
                   + 添加用户
                 </el-button>
@@ -320,11 +315,82 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 添加用户对话框 -->
+    <el-dialog v-model="showAddUserDialog" title="添加用户" width="600px">
+      <el-form
+        ref="addUserFormRef"
+        :model="addUserForm"
+        :rules="addUserRules"
+        label-width="100px"
+        class="add-user-form"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="addUserForm.username" placeholder="请输入用户名" />
+        </el-form-item>
+        
+        <el-form-item label="密码" prop="password">
+          <el-input 
+            v-model="addUserForm.password" 
+            type="password" 
+            placeholder="请输入密码" 
+            show-password
+          />
+        </el-form-item>
+        
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input 
+            v-model="addUserForm.confirmPassword" 
+            type="password" 
+            placeholder="请确认密码" 
+            show-password
+          />
+        </el-form-item>
+        
+        <el-form-item label="昵称" prop="nickname">
+          <el-input v-model="addUserForm.nickname" placeholder="请输入昵称" />
+        </el-form-item>
+        
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="addUserForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="addUserForm.role" placeholder="请选择角色" style="width: 100%">
+            <el-option label="普通用户" value="user" />
+            <el-option label="编辑" value="editor" />
+            <el-option label="管理员" value="admin" />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="个人简介" prop="bio">
+          <el-input 
+            v-model="addUserForm.bio" 
+            type="textarea" 
+            :rows="3"
+            placeholder="请输入个人简介（可选）" 
+          />
+        </el-form-item>
+        
+        <el-form-item label="地址" prop="address">
+          <el-input v-model="addUserForm.address" placeholder="请输入地址（可选）" />
+        </el-form-item>
+      </el-form>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showAddUserDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleAddUser" :loading="addUserLoading">
+            确定添加
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { userApi } from '@/api/user'
@@ -332,11 +398,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Search, User, UserFilled, 
   View, Setting, Delete,
-  Filter, Download, Plus, ArrowUp, ArrowDown,
+  Filter, Plus, ArrowUp, ArrowDown,
   Edit, Check, Close
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
-import type { UserInfo, UserListResponse } from '@/types/user'
+import type { UserInfo, UserListResponse, CreateUserRequest } from '@/types/user'
+import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -358,6 +425,63 @@ const selectedRows = ref<UserInfo[]>([])
 // 对话框状态
 const showUserDetail = ref(false)
 const selectedUser = ref<UserInfo | null>(null)
+const showAddUserDialog = ref(false)
+
+// 添加用户相关
+const addUserFormRef = ref<FormInstance>()
+const addUserLoading = ref(false)
+const addUserForm = reactive({
+  username: '',
+  password: '',
+  confirmPassword: '',
+  nickname: '',
+  email: '',
+  role: 'user',
+  bio: '',
+  address: ''
+})
+
+const addUserRules: FormRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 1, max: 50, message: '用户名长度在 1 到 50 个字符', trigger: 'blur' },
+    { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    {
+      validator: (_rule: any, value: string, callback: any) => {
+        if (value !== addUserForm.password) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  nickname: [
+    { required: true, message: '请输入昵称', trigger: 'blur' },
+    { max: 50, message: '昵称长度不能超过 50 个字符', trigger: 'blur' }
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
+  ],
+  bio: [
+    { max: 200, message: '个人简介长度不能超过 200 个字符', trigger: 'blur' }
+  ],
+  address: [
+    { max: 100, message: '地址长度不能超过 100 个字符', trigger: 'blur' }
+  ]
+}
 
 // 计算属性
 const adminUsers = computed(() => {
@@ -629,6 +753,45 @@ const handleLogout = () => {
   router.push('/')
 }
 
+// 添加用户
+const handleAddUser = async () => {
+  if (!addUserFormRef.value) return
+  
+  try {
+    await addUserFormRef.value.validate()
+    
+    addUserLoading.value = true
+    
+    const createData: CreateUserRequest = {
+      username: addUserForm.username,
+      password: addUserForm.password,
+      nickname: addUserForm.nickname,
+      email: addUserForm.email,
+      role: addUserForm.role,
+      bio: addUserForm.bio || undefined,
+      address: addUserForm.address || undefined
+    }
+    
+    const response = await userApi.createUser(createData)
+    
+    if (response.code === 0) {
+      ElMessage.success('添加用户成功')
+      showAddUserDialog.value = false
+      // 重置表单
+      addUserFormRef.value.resetFields()
+      // 重新加载用户列表
+      loadUsers()
+    } else {
+      ElMessage.error(response.msg || '添加用户失败')
+    }
+  } catch (error) {
+    console.error('添加用户失败:', error)
+    ElMessage.error('添加用户失败')
+  } finally {
+    addUserLoading.value = false
+  }
+}
+
 // 页面加载时获取用户列表
 onMounted(() => {
   console.log('用户管理页面已加载')
@@ -736,7 +899,7 @@ onMounted(() => {
       width: 120px;
     }
     
-    .filter-btn, .export-btn {
+    .filter-btn {
       display: flex;
       align-items: center;
       gap: 6px;
@@ -1030,6 +1193,31 @@ onMounted(() => {
   }
 }
 
+// 添加用户对话框样式
+.add-user-form {
+  .el-form-item {
+    margin-bottom: 20px;
+  }
+  
+  .el-input, .el-select {
+    width: 100%;
+  }
+  
+  .el-textarea {
+    .el-textarea__inner {
+      resize: vertical;
+    }
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
 // 响应式设计
 @media (max-width: 1024px) {
   .page-header .header-content {
@@ -1061,7 +1249,7 @@ onMounted(() => {
     flex-direction: column;
     align-items: stretch;
     
-    .filter-select, .filter-btn, .export-btn, .add-user-btn {
+    .filter-select, .filter-btn, .add-user-btn {
       width: 100%;
     }
   }

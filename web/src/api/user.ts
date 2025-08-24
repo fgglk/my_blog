@@ -7,7 +7,8 @@ import type {
   UpdateUserRequest, 
   ChangePasswordRequest,
   UserListRequest,
-  UserListResponse
+  UserListResponse,
+  CreateUserRequest
 } from '@/types/user'
 
 // 用户API
@@ -101,5 +102,10 @@ export const userApi = {
   // 更新用户状态
   updateUserStatus: (userId: string, status: string): Promise<ApiResponse> => {
     return request.put(`/users/${userId}/status`, { status })
+  },
+
+  // 创建用户（管理员）
+  createUser: (data: CreateUserRequest): Promise<ApiResponse<UserInfo>> => {
+    return request.post('/users/create', data)
   }
 } 

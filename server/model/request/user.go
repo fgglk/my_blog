@@ -46,11 +46,11 @@ type ChangePasswordRequest struct {
 
 // UserListRequest 用户列表查询请求
 type UserListRequest struct {
-	Page     int     `form:"page" validate:"min=1"`
-	Size     int     `form:"size" validate:"min=1,max=100"`
-	Username string  `form:"username" validate:"omitempty"`
-	Email    string  `form:"email" validate:"omitempty,email"`
-	Status   *uint8  `form:"status" validate:"omitempty,oneof=0 1"`
+	Page     int    `form:"page" validate:"min=1"`
+	Size     int    `form:"size" validate:"min=1,max=100"`
+	Username string `form:"username" validate:"omitempty"`
+	Email    string `form:"email" validate:"omitempty,email"`
+	Status   *uint8 `form:"status" validate:"omitempty,oneof=0 1"`
 }
 
 // ForgotPasswordRequest 忘记密码请求
@@ -66,4 +66,15 @@ type ResetPasswordRequest struct {
 	EmailCode       string `json:"email_code" binding:"required"`
 	NewPassword     string `json:"new_password" binding:"required,min=6,max=20"`
 	ConfirmPassword string `json:"confirm_password" binding:"required,eqfield=NewPassword"`
+}
+
+// CreateUserRequest 管理员创建用户请求
+type CreateUserRequest struct {
+	Username string           `json:"username" validate:"required,min=1,max=50"`
+	Password string           `json:"password" validate:"required,min=6,max=20"`
+	Nickname string           `json:"nickname" validate:"max=50"`
+	Email    string           `json:"email" validate:"required,email"`
+	Role     appType.RoleType `json:"role" validate:"omitempty"`
+	Bio      string           `json:"bio" validate:"max=200"`
+	Address  string           `json:"address" validate:"max=100"`
 }

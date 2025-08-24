@@ -228,6 +228,72 @@ func (u *UserService) GetUserList(listReq request.UserListRequest) (err error, l
 	return nil, list, total
 }
 
+// CreateUser 管理员创建用户
+func (u *UserService) CreateUser(createReq request.CreateUserRequest) (err error, user database.User) {
+	// 开始事务
+	tx := global.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 检查用户名是否已存在
+	var count int64
+	if err := tx.Model(&database.User{}).Where("username = ? AND deleted_at IS NULL", createReq.Username).Count(&count).Error; err != nil {
+		tx.Rollback()
+		return err, user
+	}
+	if count > 0 {
+		tx.Rollback()
+		return errors.New("用户名已存在"), user
+	}
+
+	// 检查邮箱是否已存在
+	if err := tx.Model(&database.User{}).Where("email = ?", createReq.Email).Count(&count).Error; err != nil {
+		tx.Rollback()
+		return err, user
+	}
+	if count > 0 {
+		tx.Rollback()
+		return errors.New("邮箱已被注册"), user
+	}
+
+	// 创建用户
+	user = database.User{
+		Username: createReq.Username,
+		Password: utils.BcryptHash(createReq.Password),
+		Nickname: createReq.Nickname,
+		Email:    createReq.Email,
+		Role:     createReq.Role,
+		Bio:      createReq.Bio,
+		Address:  createReq.Address,
+	}
+	// 设置默认启用状态
+	user.Status = 1
+
+	if err = tx.Create(&user).Error; err != nil {
+		tx.Rollback()
+		// 明确处理唯一约束错误
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			if strings.Contains(err.Error(), "idx_users_username") {
+				return errors.New("用户名已存在"), user
+			} else if strings.Contains(err.Error(), "idx_users_email") {
+				return errors.New("邮箱已被注册"), user
+			}
+		}
+		return err, user
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err, user
+	}
+
+	return nil, user
+}
+
 // ResetUserPassword 重置用户密码
 func (u *UserService) ResetUserPassword(email, newPassword string) error {
 	// 加密密码

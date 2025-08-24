@@ -33,5 +33,6 @@ func UserRouter(router *gin.RouterGroup) {
 		authRouter.POST("avatar", userApi.UploadAvatar)      // 上传头像
 		authRouter.PUT(":uuid/approve", userApi.ApproveUser) // 启用用户
 		authRouter.PUT(":uuid/reject", userApi.RejectUser)   // 禁用用户
+		authRouter.POST("create", userApi.CreateUser)        // 管理员创建用户
 	}
 }

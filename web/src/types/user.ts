@@ -60,4 +60,15 @@ export interface UserListResponse {
   total: number
   page: number
   pageSize: number
+}
+
+// 创建用户请求参数
+export interface CreateUserRequest {
+  username: string
+  password: string
+  nickname: string
+  email: string
+  role?: string
+  bio?: string
+  address?: string
 } 

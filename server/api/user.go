@@ -467,3 +467,44 @@ func (u *UserApi) RejectUser(c *gin.Context) {
 
 	response.OkWithMessage("禁用用户成功", c)
 }
+
+// CreateUser 管理员创建用户
+func (u *UserApi) CreateUser(c *gin.Context) {
+	var createReq request.CreateUserRequest
+	if err := c.ShouldBindJSON(&createReq); err != nil {
+		response.FailWithMessage("参数错误", c)
+		return
+	}
+
+	// 参数验证
+	if errMsg := utils.ValidateStruct(createReq); errMsg != "" {
+		response.FailWithMessage(errMsg, c)
+		return
+	}
+
+	// 获取当前用户ID
+	currentUserID, err := utils.GetUserID(c)
+	if err != nil {
+		response.NoAuth(err.Error(), c)
+		return
+	}
+
+	// 只有管理员可以创建用户
+	if !utils.IsAdmin(currentUserID) {
+		response.FailWithMessage("没有权限进行此操作", c)
+		return
+	}
+
+	// 设置默认角色
+	if createReq.Role == "" {
+		createReq.Role = "user"
+	}
+
+	// 调用服务层创建用户
+	if err, user := userService.CreateUser(createReq); err != nil {
+		global.ZapLog.Error("创建用户失败", zap.Error(err))
+		response.FailWithMessage("创建用户失败: "+err.Error(), c)
+	} else {
+		response.OkWithDetailed(response.ToUserResponse(user), "创建用户成功", c)
+	}
+}
