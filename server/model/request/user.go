@@ -50,6 +50,7 @@ type UserListRequest struct {
 	Size      int    `form:"size" validate:"min=1,max=100"`
 	Username  string `form:"username" validate:"omitempty"`
 	Email     string `form:"email" validate:"omitempty,email"`
+	Keyword   string `form:"keyword" validate:"omitempty"` // 搜索关键词
 	Status    *uint8 `form:"status" validate:"omitempty,oneof=0 1"`
 	SortBy    string `form:"sortBy" validate:"omitempty,oneof=recent username createdAt lastLogin"`
 	SortOrder string `form:"sortOrder" validate:"omitempty,oneof=asc desc"`

@@ -211,6 +211,11 @@ func (u *UserService) GetUserList(listReq request.UserListRequest) (err error, l
 	if listReq.Email != "" {
 		query = query.Where("email LIKE ?", "%"+listReq.Email+"%")
 	}
+	// 关键词搜索（支持用户名、昵称、邮箱的模糊搜索）
+	if listReq.Keyword != "" {
+		keyword := "%" + listReq.Keyword + "%"
+		query = query.Where("username LIKE ? OR nickname LIKE ? OR email LIKE ?", keyword, keyword, keyword)
+	}
 	// 添加状态筛选
 	if listReq.Status != nil {
 		query = query.Where("status = ?", *listReq.Status)
