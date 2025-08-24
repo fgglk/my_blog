@@ -29,7 +29,7 @@ type UserUpdateRequest struct {
 	ID        uint             `json:"id" validate:"required"`
 	Nickname  string           `json:"nickname" validate:"max=50"`
 	Email     string           `json:"email" validate:"email"`
-	Avatar    string           `json:"avatar" validate:"omitempty,url"`
+	Avatar    string           `json:"avatar" validate:"omitempty"`
 	Bio       string           `json:"bio" validate:"max=200"`
 	Address   string           `json:"address" validate:"max=100"`
 	Role      appType.RoleType `json:"role" validate:"omitempty"` // 改为可选

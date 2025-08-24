@@ -38,7 +38,7 @@
                       >
                         {{ displayUserInfo?.nickname?.charAt(0) || 'U' }}
                       </el-avatar>
-                      <div v-if="!isViewingOtherUser" class="avatar-overlay" @click="triggerAvatarUpload">
+                      <div v-if="!isViewingOtherUser" class="avatar-overlay" @click="showAvatarOptions = true">
                         <el-icon><Camera /></el-icon>
                         <span>更换头像</span>
                       </div>
@@ -313,6 +313,52 @@
           </el-button>
         </template>
       </el-dialog>
+
+             <!-- 头像选择选项对话框 -->
+       <el-dialog
+         v-model="showAvatarOptions"
+         title="更换头像"
+         width="450px"
+         :close-on-click-modal="false"
+         class="avatar-options-dialog"
+       >
+         <div class="avatar-options">
+           <div class="option-card" @click="triggerAvatarUpload">
+             <div class="option-icon">
+               <el-icon><Camera /></el-icon>
+             </div>
+             <div class="option-content">
+               <h3 class="option-title">上传新图片</h3>
+               <p class="option-description">从本地上传一张新的图片作为头像</p>
+             </div>
+             <div class="option-arrow">
+               <el-icon><ArrowRight /></el-icon>
+             </div>
+           </div>
+           
+           <div class="option-card" @click="showImageSelector = true; showAvatarOptions = false">
+             <div class="option-icon">
+               <el-icon><Picture /></el-icon>
+             </div>
+             <div class="option-content">
+               <h3 class="option-title">从已上传图片中选择</h3>
+               <p class="option-description">从您之前上传的图片中选择一张作为头像</p>
+             </div>
+             <div class="option-arrow">
+               <el-icon><ArrowRight /></el-icon>
+             </div>
+           </div>
+         </div>
+       </el-dialog>
+
+      <!-- 图片选择对话框 -->
+      <ImageSelector
+        v-model="showImageSelector"
+        title="选择头像"
+        confirm-text="选择此图片作为头像"
+        @confirm="handleAvatarImageSelect"
+        @cancel="showImageSelector = false"
+      />
     </div>
   </template>
   
@@ -323,14 +369,16 @@ import { useUserStore } from '@/stores/user'
 import { useArticleStore } from '@/stores/article'
 import { userApi } from '@/api/user'
 import { articleApi } from '@/api/article'
+import { imageApi } from '@/api/image'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Camera, Edit, Lock, Document, View, Star, ChatDotRound, Plus, 
-  ArrowRight, Delete, Collection, EditPen, UserFilled, Picture
+  ArrowRight, Delete, Collection, EditPen, UserFilled, Picture, Check
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import type { Article } from '@/types/article'
 import { getPlainTextSummary } from '@/utils/markdown'
+import ImageSelector from '@/components/ImageSelector.vue'
   
   const router = useRouter()
 const route = useRoute()
@@ -363,9 +411,13 @@ const displayUserInfo = computed(() => {
   
   const showEditDialog = ref(false)
   const showPasswordDialog = ref(false)
+  const showAvatarOptions = ref(false)
+  const showImageSelector = ref(false)
   const updateLoading = ref(false)
   const passwordLoading = ref(false)
   const avatarInput = ref<HTMLInputElement>()
+  
+
 
 const avatarKey = ref(0)
 const activeTab = ref('published')
@@ -393,6 +445,7 @@ const activeTab = ref('published')
   })
   
   const editForm = reactive({
+    id: userStore.userInfo?.id || 0,
     nickname: userStore.userInfo?.nickname || '',
     email: userStore.userInfo?.email || '',
     bio: userStore.userInfo?.bio || '这个人很懒，什么都没有留下...'
@@ -423,9 +476,33 @@ const avatarUrlWithCacheBust = computed(() => {
     console.error('头像加载失败:', target.src)
   }
 
-// 触发头像上传
+  // 触发头像上传
   const triggerAvatarUpload = () => {
     avatarInput.value?.click()
+  }
+  
+  // 处理头像图片选择
+  const handleAvatarImageSelect = async (image: any) => {
+    try {
+      // 直接更新用户头像URL
+      const result = await userStore.updateUserInfo({
+        ...editForm,
+        avatar: image.url
+      })
+      
+      if (result.success) {
+        ElMessage.success('头像设置成功')
+        
+        // 强制刷新头像显示
+        avatarKey.value = Date.now()
+        forceRefreshAvatar.value = Date.now()
+      } else {
+        ElMessage.error(result.message || '头像设置失败')
+      }
+    } catch (error) {
+      console.error('设置头像失败:', error)
+      ElMessage.error('头像设置失败')
+    }
   }
   
   // 处理头像上传
@@ -445,6 +522,9 @@ const avatarUrlWithCacheBust = computed(() => {
         // 强制刷新头像显示 - 通过更新key强制重新渲染
         avatarKey.value = Date.now()
         forceRefreshAvatar.value = Date.now()
+        
+        // 关闭头像选择对话框
+        showAvatarOptions.value = false
         
         // 清空文件输入框，允许重复选择同一文件
         if (target) {
@@ -702,6 +782,18 @@ const avatarUrlWithCacheBust = computed(() => {
     await loadUserInfo(currentUserId.value!)
     await loadUserArticles()
   })
+  
+  // 监听用户信息变化，更新editForm
+  watch(() => userStore.userInfo, (newUserInfo) => {
+    if (newUserInfo) {
+      editForm.id = newUserInfo.id
+      editForm.nickname = newUserInfo.nickname || ''
+      editForm.email = newUserInfo.email || ''
+      editForm.bio = newUserInfo.bio || '这个人很懒，什么都没有留下...'
+    }
+  }, { immediate: true })
+  
+
   </script>
   
   <style lang="scss" scoped>
@@ -1525,4 +1617,101 @@ const avatarUrlWithCacheBust = computed(() => {
     margin-bottom: 8px;
   }
 }
+
+ // 头像选择选项样式
+ .avatar-options-dialog {
+   :deep(.el-dialog__body) {
+     padding: 0;
+   }
+   
+   :deep(.el-dialog__header) {
+     padding: 20px 24px 16px;
+     border-bottom: 1px solid #f0f0f0;
+     
+     .el-dialog__title {
+       font-size: 18px;
+       font-weight: 600;
+       color: #1f2937;
+     }
+   }
+ }
+
+ .avatar-options {
+   padding: 24px;
+   
+   .option-card {
+     display: flex;
+     align-items: center;
+     padding: 20px;
+     margin-bottom: 16px;
+     background: white;
+     border: 2px solid #f3f4f6;
+     border-radius: 12px;
+     cursor: pointer;
+     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+     
+     &:last-child {
+       margin-bottom: 0;
+     }
+     
+     &:hover {
+       border-color: #3b82f6;
+       transform: translateY(-2px);
+       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+       
+       .option-icon {
+         background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+         transform: scale(1.05);
+       }
+       
+       .option-arrow {
+         color: #3b82f6;
+         transform: translateX(4px);
+       }
+     }
+     
+     .option-icon {
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       width: 48px;
+       height: 48px;
+       border-radius: 12px;
+       background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+       color: white;
+       margin-right: 16px;
+       transition: all 0.3s ease;
+       
+       .el-icon {
+         font-size: 20px;
+       }
+     }
+     
+     .option-content {
+       flex: 1;
+       text-align: left;
+       
+       .option-title {
+         font-size: 16px;
+         font-weight: 600;
+         color: #1f2937;
+         margin: 0 0 4px 0;
+         line-height: 1.4;
+       }
+       
+       .option-description {
+         font-size: 14px;
+         color: #6b7280;
+         margin: 0;
+         line-height: 1.5;
+       }
+     }
+     
+     .option-arrow {
+       color: #9ca3af;
+       font-size: 16px;
+       transition: all 0.3s ease;
+     }
+   }
+ }
 </style>
