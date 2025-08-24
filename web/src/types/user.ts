@@ -52,6 +52,7 @@ export interface UserListRequest {
   keyword?: string
   status?: number
   sortBy?: string
+  sortOrder?: string
 }
 
 // 用户列表响应

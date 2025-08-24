@@ -216,6 +216,35 @@ func (u *UserService) GetUserList(listReq request.UserListRequest) (err error, l
 		query = query.Where("status = ?", *listReq.Status)
 	}
 
+	// 添加排序
+	if listReq.SortBy != "" {
+		sortOrder := "desc"
+		if listReq.SortOrder != "" {
+			sortOrder = listReq.SortOrder
+		}
+
+		switch listReq.SortBy {
+		case "recent":
+			query = query.Order("created_at " + sortOrder)
+		case "username":
+			query = query.Order("username " + sortOrder)
+		case "createdAt":
+			query = query.Order("created_at " + sortOrder)
+		case "lastLogin":
+			// MySQL不支持NULLS LAST，使用CASE语句来处理NULL值
+			if sortOrder == "desc" {
+				query = query.Order("CASE WHEN last_login_at IS NULL THEN 0 ELSE 1 END DESC, last_login_at DESC")
+			} else {
+				query = query.Order("CASE WHEN last_login_at IS NULL THEN 1 ELSE 0 END ASC, last_login_at ASC")
+			}
+		default:
+			query = query.Order("created_at desc")
+		}
+	} else {
+		// 默认按创建时间倒序
+		query = query.Order("created_at desc")
+	}
+
 	// 获取总数
 	query.Count(&total)
 

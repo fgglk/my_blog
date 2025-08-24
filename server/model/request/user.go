@@ -46,11 +46,13 @@ type ChangePasswordRequest struct {
 
 // UserListRequest 用户列表查询请求
 type UserListRequest struct {
-	Page     int    `form:"page" validate:"min=1"`
-	Size     int    `form:"size" validate:"min=1,max=100"`
-	Username string `form:"username" validate:"omitempty"`
-	Email    string `form:"email" validate:"omitempty,email"`
-	Status   *uint8 `form:"status" validate:"omitempty,oneof=0 1"`
+	Page      int    `form:"page" validate:"min=1"`
+	Size      int    `form:"size" validate:"min=1,max=100"`
+	Username  string `form:"username" validate:"omitempty"`
+	Email     string `form:"email" validate:"omitempty,email"`
+	Status    *uint8 `form:"status" validate:"omitempty,oneof=0 1"`
+	SortBy    string `form:"sortBy" validate:"omitempty,oneof=recent username createdAt lastLogin"`
+	SortOrder string `form:"sortOrder" validate:"omitempty,oneof=asc desc"`
 }
 
 // ForgotPasswordRequest 忘记密码请求

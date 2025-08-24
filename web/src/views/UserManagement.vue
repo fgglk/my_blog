@@ -110,20 +110,33 @@
           <div class="users-section">
             <div class="section-header">
               <h2 class="section-title">用户列表</h2>
-              <div class="table-controls">
-                                 <el-select v-model="sortBy" placeholder="最近添加" class="sort-select" @change="handleSortChange">
+                             <div class="table-controls">
+                 <el-select v-model="sortBy" placeholder="最近添加" class="sort-select" @change="handleSortChange">
                    <el-option label="最近添加" value="recent" />
                    <el-option label="用户名" value="username" />
                    <el-option label="注册时间" value="createdAt" />
                    <el-option label="最后登录" value="lastLogin" />
                  </el-select>
+                 
+                 <el-button 
+                   :type="sortOrder === 'desc' ? 'primary' : 'default'"
+                   class="sort-order-btn"
+                   @click="toggleSortOrder"
+                   title="切换排序方向"
+                 >
+                   <el-icon>
+                     <ArrowUp v-if="sortOrder === 'asc'" />
+                     <ArrowDown v-else />
+                   </el-icon>
+                   {{ sortOrder === 'desc' ? '降序' : '升序' }}
+                 </el-button>
                 
-                <el-select v-model="pageSize" placeholder="10条/页" class="page-size-select">
-                  <el-option label="10条/页" :value="10" />
-                  <el-option label="20条/页" :value="20" />
-                  <el-option label="50条/页" :value="50" />
-                  <el-option label="100条/页" :value="100" />
-                </el-select>
+                                 <el-select v-model="pageSize" placeholder="5条/页" class="page-size-select">
+                   <el-option label="5条/页" :value="5" />
+                   <el-option label="10条/页" :value="10" />
+                   <el-option label="20条/页" :value="20" />
+                   <el-option label="50条/页" :value="50" />
+                 </el-select>
                 
                 <el-input
                   v-model="searchKeyword"
@@ -256,15 +269,15 @@
 
             <!-- 分页 -->
             <div class="pagination-section">
-              <el-pagination
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :total="totalUsers"
-                :page-sizes="[10, 20, 50, 100]"
-                layout="total, sizes, prev, pager, next, jumper"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-              />
+                             <el-pagination
+                 v-model:current-page="currentPage"
+                 v-model:page-size="pageSize"
+                 :total="totalUsers"
+                 :page-sizes="[5, 10, 20, 50]"
+                 layout="total, sizes, prev, pager, next, jumper"
+                 @size-change="handleSizeChange"
+                 @current-change="handleCurrentChange"
+               />
             </div>
           </div>
         </div>
@@ -416,10 +429,11 @@ const loading = ref(false)
 const users = ref<UserInfo[]>([])
 const totalUsers = ref(0)
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(5)
 const searchKeyword = ref('')
 const filterStatus = ref('all')
 const sortBy = ref('recent')
+const sortOrder = ref('desc') // 默认降序
 const selectedRows = ref<UserInfo[]>([])
 
 // 对话框状态
@@ -527,6 +541,11 @@ const loadUsers = async () => {
     // 添加排序
     if (sortBy.value !== 'recent') {
       params.sortBy = sortBy.value
+      params.sortOrder = sortOrder.value
+    } else {
+      // 最近添加默认按创建时间排序
+      params.sortBy = 'createdAt'
+      params.sortOrder = sortOrder.value
     }
     
     console.log('调用用户列表API，参数:', params)
@@ -565,6 +584,13 @@ const handleFilterChange = () => {
 
 // 监听排序变化
 const handleSortChange = () => {
+  currentPage.value = 1
+  loadUsers()
+}
+
+// 切换排序方向
+const toggleSortOrder = () => {
+  sortOrder.value = sortOrder.value === 'desc' ? 'asc' : 'desc'
   currentPage.value = 1
   loadUsers()
 }
@@ -1062,9 +1088,22 @@ onMounted(() => {
     align-items: center;
     gap: 12px;
     
-    .sort-select, .page-size-select {
-      width: 120px;
-    }
+         .sort-select, .page-size-select {
+       width: 120px;
+     }
+     
+     .sort-order-btn {
+       display: flex;
+       align-items: center;
+       gap: 6px;
+       padding: 8px 12px;
+       min-width: 80px;
+       justify-content: center;
+       
+       .el-icon {
+         font-size: 14px;
+       }
+     }
     
     .search-input {
       width: 200px;
