@@ -44,10 +44,14 @@ export const useArticleStore = defineStore('article', () => {
       const response = await articleApi.getArticle(id)
       if (response.code === 0) {
         currentArticle.value = response.data
-
+      } else {
+        // 如果API返回错误，抛出错误让调用方处理
+        throw new Error(response.msg || '获取文章失败')
       }
     } catch (error) {
       console.error('获取文章详情失败:', error)
+      // 重新抛出错误，让调用方能够捕获
+      throw error
     } finally {
       loading.value = false
     }

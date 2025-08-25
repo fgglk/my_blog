@@ -16,7 +16,7 @@ func InitJWT() gin.HandlerFunc {
 		// 获取Authorization头
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
-			// 对于GET请求，允许未登录用户访问
+			// 对于GET请求，允许未登录用户访问，但不设置用户信息
 			if c.Request.Method == "GET" {
 				c.Next()
 				return
@@ -29,7 +29,7 @@ func InitJWT() gin.HandlerFunc {
 		// 检查Bearer前缀
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			// 对于GET请求，允许未登录用户访问
+			// 对于GET请求，允许未登录用户访问，但不设置用户信息
 			if c.Request.Method == "GET" {
 				c.Next()
 				return
@@ -42,7 +42,7 @@ func InitJWT() gin.HandlerFunc {
 		// 解析token - 使用utils包中的ParseToken函数
 		claims, err := utils.ParseToken(parts[1], false)
 		if err != nil {
-			// 对于GET请求，允许未登录用户访问
+			// 对于GET请求，允许未登录用户访问，但不设置用户信息
 			if c.Request.Method == "GET" {
 				c.Next()
 				return
@@ -54,7 +54,7 @@ func InitJWT() gin.HandlerFunc {
 
 		// 检查token是否过期
 		if claims.ExpiresAt.Before(time.Now()) {
-			// 对于GET请求，允许未登录用户访问
+			// 对于GET请求，允许未登录用户访问，但不设置用户信息
 			if c.Request.Method == "GET" {
 				c.Next()
 				return

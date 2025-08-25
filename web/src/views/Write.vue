@@ -913,33 +913,34 @@ const saveDraft = async () => {
     await articleFormRef.value.validate()
     saving.value = true
     
-         // 处理标签字符串，转换为标签名称数组
-         const tagNames = articleForm.tags
-           .split(/[,，]/) // 支持英文逗号和中文逗号
-           .map(tag => tag.trim())
-           .filter(tag => tag.length > 0)
-         
-         // 编码阅读设置到摘要字段
-         const summaryWithSettings = encodeReadingSettings('', readingSettings)
-         
-         const articleData = {
-           title: articleForm.title.trim(),
-           content: articleForm.content,
-           summary: summaryWithSettings, // 包含阅读设置的摘要
-           category_id: articleForm.categoryId || 3, // 使用选中的分类ID，默认为3（技术）
-           tag_names: tagNames, // 发送标签名称数组
-           cover_image: articleForm.coverImage, // 添加封面图片
-           status: 0 // 0 表示草稿，1 表示已发布
-         }
-         
-         // 调试信息
-         
+    // 处理标签字符串，转换为标签名称数组
+    const tagNames = articleForm.tags
+      .split(/[,，]/) // 支持英文逗号和中文逗号
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+    
+    // 编码阅读设置到摘要字段
+    const summaryWithSettings = encodeReadingSettings('', readingSettings)
+    
+    const articleData = {
+      title: articleForm.title.trim(),
+      content: articleForm.content,
+      summary: summaryWithSettings, // 包含阅读设置的摘要
+      category_id: articleForm.categoryId || 3, // 使用选中的分类ID，默认为3（技术）
+      tag_names: tagNames, // 发送标签名称数组
+      cover_image: articleForm.coverImage, // 添加封面图片
+      status: 0 // 0 表示草稿，1 表示已发布
+    }
+    
+    console.log('保存草稿，编辑模式:', isEdit.value, '文章数据:', articleData)
     
     let result
     if (isEdit.value) {
       const articleId = parseInt(route.params.id as string)
+      console.log('更新文章，ID:', articleId)
       result = await articleStore.updateArticle(articleId, articleData)
     } else {
+      console.log('创建新文章')
       result = await articleStore.createArticle(articleData)
     }
     
@@ -971,33 +972,34 @@ const publishArticle = async () => {
       return
     }
     
-         // 处理标签字符串，转换为标签名称数组
-     const tagNames = articleForm.tags
-       .split(/[,，]/) // 支持英文逗号和中文逗号
-       .map(tag => tag.trim())
-       .filter(tag => tag.length > 0)
-     
-     // 编码阅读设置到摘要字段
-     const summaryWithSettings = encodeReadingSettings('', readingSettings)
-     
-     const articleData = {
-       title: articleForm.title.trim(),
-       content: articleForm.content,
-       summary: summaryWithSettings, // 包含阅读设置的摘要
-       category_id: articleForm.categoryId || 3, // 使用选中的分类ID，默认为3（技术）
-       tag_names: tagNames, // 发送标签名称数组
-       cover_image: articleForm.coverImage, // 添加封面图片
-       status: 1 // 发布文章时总是设置为已发布状态
-     }
-     
-     
-     
+    // 处理标签字符串，转换为标签名称数组
+    const tagNames = articleForm.tags
+      .split(/[,，]/) // 支持英文逗号和中文逗号
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+    
+    // 编码阅读设置到摘要字段
+    const summaryWithSettings = encodeReadingSettings('', readingSettings)
+    
+    const articleData = {
+      title: articleForm.title.trim(),
+      content: articleForm.content,
+      summary: summaryWithSettings, // 包含阅读设置的摘要
+      category_id: articleForm.categoryId || 3, // 使用选中的分类ID，默认为3（技术）
+      tag_names: tagNames, // 发送标签名称数组
+      cover_image: articleForm.coverImage, // 添加封面图片
+      status: 1 // 发布文章时总是设置为已发布状态
+    }
+    
+    console.log('发布文章，编辑模式:', isEdit.value, '文章数据:', articleData)
     
     let result
     if (isEdit.value) {
       const articleId = parseInt(route.params.id as string)
+      console.log('更新文章，ID:', articleId)
       result = await articleStore.updateArticle(articleId, articleData)
     } else {
+      console.log('创建新文章')
       result = await articleStore.createArticle(articleData)
     }
     
@@ -1047,29 +1049,49 @@ const loadArticle = async () => {
   }
   
   try {
+    console.log('开始加载文章，ID:', articleId)
+    console.log('当前路由参数:', route.params)
+    console.log('用户信息:', userStore.userInfo)
+    
     await articleStore.getArticle(articleId)
     const article = articleStore.currentArticle
     
+    console.log('文章store中的文章:', article)
+    
     if (article) {
+      console.log('文章加载成功:', article)
+      console.log('文章状态:', article.is_published)
+      console.log('文章标签:', article.tags)
+      
       articleForm.title = article.title
       articleForm.content = article.content
       articleForm.categoryId = article.category_id
-      articleForm.tags = article.tags.map(tag => tag.name).join(',')
+      articleForm.tags = (article.tags || []).map(tag => tag.name).join(',')
       articleForm.coverImage = article.cover_image || null
       publishStatus.value = article.is_published ? 'publish' : 'draft'
       
-              // 解析阅读设置
-        if (article.summary) {
-          const settings = parseReadingSettings(article.summary)
-          readingSettings.allowComments = settings.allowComments
-          readingSettings.allowRepost = settings.allowRepost
-          readingSettings.requireLogin = settings.requireLogin
-          readingSettings.showAuthorInfo = settings.showAuthorInfo
-          readingSettings.enableTOC = settings.enableTOC
-        }
+      // 解析阅读设置
+      if (article.summary) {
+        const settings = parseReadingSettings(article.summary)
+        readingSettings.allowComments = settings.allowComments
+        readingSettings.allowRepost = settings.allowRepost
+        readingSettings.requireLogin = settings.requireLogin
+        readingSettings.showAuthorInfo = settings.showAuthorInfo
+        readingSettings.enableTOC = settings.enableTOC
+      }
+    } else {
+      console.error('文章加载失败：文章为空')
+      ElMessage.error('文章不存在或已被删除')
+      router.push('/write')
     }
-  } catch (error) {
-    ElMessage.error('加载文章失败')
+  } catch (error: any) {
+    console.error('加载文章失败:', error)
+    console.error('错误详情:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response
+    })
+    ElMessage.error('加载文章失败，请检查网络连接或文章是否存在')
     router.push('/write')
   }
 }

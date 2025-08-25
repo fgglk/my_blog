@@ -154,7 +154,7 @@
               <div class="image-checkbox">
                 <el-checkbox 
                   :model-value="selectedImages.includes(image.id)"
-                  @change="(checked) => handleCheckboxChange(image.id, checked)"
+                  @change="(checked: any) => handleCheckboxChange(image.id, checked)"
                   @click.stop
                 />
               </div>

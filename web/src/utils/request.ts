@@ -33,10 +33,8 @@ request.interceptors.response.use(
           (response: AxiosResponse) => {
           const { data } = response
           
-          // 如果响应码不是0，说明有错误
+          // 如果响应码不是0，说明有错误，但不自动显示错误消息
           if (data.code !== 0) {
-            ElMessage.error(data.msg || '请求失败')
-            
             // 如果是401未授权，跳转到登录页
             if (data.code === 401) {
               localStorage.removeItem('token')

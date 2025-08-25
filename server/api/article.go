@@ -134,37 +134,33 @@ func (a *ArticleApi) GetArticle(c *gin.Context) {
 		return
 	}
 
-	// 调用服务层获取文章
-	// 从上下文中获取用户信息和权限
-	// value, exists := c.Get("isAdmin")
-	// isAdmin := false
-	// if exists {
-	// 	isAdmin, _ = value.(bool)
-	// }
+	global.ZapLog.Info("获取文章详情", zap.Uint64("articleID", id))
 
-	// userIDValue, userExists := c.Get("userID")
-	// currentUserID := uint(0)
-	// if userExists {
-	// 	currentUserID, _ = userIDValue.(uint)
-	// }
 	// 尝试获取用户ID，如果失败则设置为0（未登录用户）
 	currentUserID, err := utils.GetUserID(c)
 	if err != nil {
 		// 处理未登录或登录过期的情况
 		currentUserID = 0
+		global.ZapLog.Info("用户未登录或登录过期", zap.Error(err))
+	} else {
+		global.ZapLog.Info("用户已登录", zap.Uint("userID", currentUserID))
 	}
 
 	isAdmin := false
 	if currentUserID != 0 {
 		isAdmin = utils.IsAdmin(currentUserID)
+		global.ZapLog.Info("用户权限检查", zap.Bool("isAdmin", isAdmin))
 	}
 
 	// 调用方法时传入完整参数
 	article, err := articleService.GetArticleByID(uint(id), isAdmin, currentUserID)
 	if err != nil {
+		global.ZapLog.Error("获取文章失败", zap.Uint64("articleID", id), zap.Error(err))
 		response.FailWithMessage("获取文章失败: "+err.Error(), c)
 		return
 	}
+
+	global.ZapLog.Info("文章获取成功", zap.Uint64("articleID", id), zap.Uint("authorID", article.AuthorID), zap.Uint8("status", article.Status))
 
 	// 获取关联数据
 	articleResponse := response.ToArticleResponse(article, article.Category, article.Tags, article.Author.Username, currentUserID)
