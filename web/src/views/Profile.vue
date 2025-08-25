@@ -351,14 +351,14 @@
          </div>
        </el-dialog>
 
-      <!-- 图片选择对话框 -->
-      <ImageSelector
-        v-model="showImageSelector"
-        title="选择头像"
-        confirm-text="选择此图片作为头像"
-        @confirm="handleAvatarImageSelect"
-        @cancel="showImageSelector = false"
-      />
+             <!-- 图片选择对话框 -->
+       <ImageSelector
+         v-model="showImageSelector"
+         title="选择头像"
+         confirm-text="选择此图片作为头像"
+         @confirm="handleAvatarImageSelect"
+         @cancel="handleAvatarImageSelectorCancel"
+       />
     </div>
   </template>
   
@@ -481,29 +481,35 @@ const avatarUrlWithCacheBust = computed(() => {
     avatarInput.value?.click()
   }
   
-  // 处理头像图片选择
-  const handleAvatarImageSelect = async (image: any) => {
-    try {
-      // 直接更新用户头像URL
-      const result = await userStore.updateUserInfo({
-        ...editForm,
-        avatar: image.url
-      })
-      
-      if (result.success) {
-        ElMessage.success('头像设置成功')
-        
-        // 强制刷新头像显示
-        avatarKey.value = Date.now()
-        forceRefreshAvatar.value = Date.now()
-      } else {
-        ElMessage.error(result.message || '头像设置失败')
-      }
-    } catch (error) {
-      console.error('设置头像失败:', error)
-      ElMessage.error('头像设置失败')
-    }
-  }
+     // 处理头像图片选择
+   const handleAvatarImageSelect = async (image: any) => {
+     try {
+       // 直接更新用户头像URL
+       const result = await userStore.updateUserInfo({
+         ...editForm,
+         avatar: image.url
+       })
+       
+       if (result.success) {
+         ElMessage.success('头像设置成功')
+         
+         // 强制刷新头像显示
+         avatarKey.value = Date.now()
+         forceRefreshAvatar.value = Date.now()
+       } else {
+         ElMessage.error(result.message || '头像设置失败')
+       }
+     } catch (error) {
+       console.error('设置头像失败:', error)
+       ElMessage.error('头像设置失败')
+     }
+   }
+
+   // 处理头像图片选择器取消
+   const handleAvatarImageSelectorCancel = () => {
+     console.log('Profile.vue: 头像图片选择器取消')
+     showImageSelector.value = false
+   }
   
   // 处理头像上传
   const handleAvatarChange = async (event: Event) => {

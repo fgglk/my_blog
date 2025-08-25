@@ -1,13 +1,17 @@
 <template>
   <el-dialog
-    v-model="visible"
+    :model-value="props.modelValue"
     :title="title"
     width="900px"
     :close-on-click-modal="false"
+    :close-on-press-escape="true"
+    :show-close="true"
     class="image-selector-dialog"
+    @close="handleDialogClose"
+    @update:model-value="handleUpdateModelValue"
   >
     <div class="image-selector">
-      <div class="image-grid">
+      <div v-if="images.length > 0" class="image-grid">
         <div 
           v-for="image in images" 
           :key="image.id" 
@@ -32,7 +36,7 @@
           </div>
         </div>
       </div>
-      <div v-if="images.length === 0" class="empty-state">
+      <div v-else class="empty-state">
         <el-empty description="暂无图片">
           <div class="empty-content">
             <p class="empty-text">您还没有上传过图片</p>
@@ -48,7 +52,7 @@
         <el-button 
           type="primary" 
           @click="handleConfirm"
-          :disabled="!selectedImageId"
+          :disabled="!selectedImageId || images.length === 0"
           size="large"
         >
           {{ confirmText }}
@@ -84,29 +88,32 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
-const visible = ref(false)
 const images = ref<ImageInfo[]>([])
 const selectedImageId = ref<number | null>(null)
 
 // 监听 modelValue 变化
 watch(() => props.modelValue, (newVal) => {
-  visible.value = newVal
+  console.log('ImageSelector: modelValue 变化', newVal)
   if (newVal) {
     loadImages()
-  }
-})
-
-// 监听 visible 变化
-watch(visible, (newVal) => {
-  emit('update:modelValue', newVal)
-  if (!newVal) {
+  } else {
     selectedImageId.value = null
   }
 })
 
+// 处理对话框的model-value更新
+const handleUpdateModelValue = (value: boolean) => {
+  console.log('ImageSelector: handleUpdateModelValue', value)
+  emit('update:modelValue', value)
+  if (!value) {
+    selectedImageId.value = null
+  }
+}
+
 // 加载用户图片
 const loadImages = async () => {
   try {
+    console.log('ImageSelector: 开始加载图片')
     const response = await imageApi.getImageList({
       page: 1,
       size: 100,
@@ -115,9 +122,11 @@ const loadImages = async () => {
     })
     if (response.code === 0) {
       images.value = response.data.list
+      console.log('ImageSelector: 加载图片完成，数量:', images.value.length)
     }
   } catch (error) {
     console.error('加载用户图片失败:', error)
+    images.value = []
   }
 }
 
@@ -132,19 +141,29 @@ const formatFileSize = (bytes: number): string => {
 
 // 确认选择
 const handleConfirm = () => {
-  if (!selectedImageId.value) return
+  if (!selectedImageId.value || images.value.length === 0) return
   
   const selectedImage = images.value.find(img => img.id === selectedImageId.value)
   if (selectedImage) {
     emit('confirm', selectedImage)
-    visible.value = false
+    emit('update:modelValue', false)
   }
 }
 
 // 取消选择
 const handleCancel = () => {
+  console.log('ImageSelector: 取消按钮被点击')
+  selectedImageId.value = null
   emit('cancel')
-  visible.value = false
+  emit('update:modelValue', false)
+}
+
+// 处理对话框关闭
+const handleDialogClose = () => {
+  console.log('ImageSelector: 对话框关闭事件')
+  selectedImageId.value = null
+  emit('cancel')
+  emit('update:modelValue', false)
 }
 </script>
 

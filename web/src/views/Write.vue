@@ -472,7 +472,7 @@
     title="选择封面图片"
     confirm-text="选择此图片作为封面"
     @confirm="handleCoverImageSelect"
-    @cancel="showCoverImageSelector = false"
+    @cancel="handleCoverImageSelectorCancel"
   />
 
   <!-- 预览对话框 -->
@@ -824,6 +824,12 @@ const handleCoverImageSelect = async (image: any) => {
     console.error('设置封面图片失败:', error)
     ElMessage.error('封面图片设置失败')
   }
+}
+
+// 处理封面图片选择器取消
+const handleCoverImageSelectorCancel = () => {
+  console.log('Write.vue: 封面图片选择器取消')
+  showCoverImageSelector.value = false
 }
 
 // 移除封面图
