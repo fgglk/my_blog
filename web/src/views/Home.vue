@@ -317,7 +317,7 @@ import { useTagStore } from '@/stores/tag'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   View, Promotion, ChatDotRound, House, Search, Edit, User, UserFilled,
-  Document, Refresh, Collection, Message, Link, Location, Star
+  Document, Refresh, Collection, Message, Link, Star
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import type { Article } from '@/types/article'

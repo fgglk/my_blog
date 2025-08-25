@@ -1049,20 +1049,10 @@ const loadArticle = async () => {
   }
   
   try {
-    console.log('开始加载文章，ID:', articleId)
-    console.log('当前路由参数:', route.params)
-    console.log('用户信息:', userStore.userInfo)
-    
     await articleStore.getArticle(articleId)
     const article = articleStore.currentArticle
     
-    console.log('文章store中的文章:', article)
-    
     if (article) {
-      console.log('文章加载成功:', article)
-      console.log('文章状态:', article.is_published)
-      console.log('文章标签:', article.tags)
-      
       articleForm.title = article.title
       articleForm.content = article.content
       articleForm.categoryId = article.category_id
@@ -1080,17 +1070,11 @@ const loadArticle = async () => {
         readingSettings.enableTOC = settings.enableTOC
       }
     } else {
-      console.error('文章加载失败：文章为空')
       ElMessage.error('文章不存在或已被删除')
       router.push('/write')
     }
   } catch (error: any) {
     console.error('加载文章失败:', error)
-    console.error('错误详情:', {
-      message: error.message,
-      stack: error.stack,
-      response: error.response
-    })
     ElMessage.error('加载文章失败，请检查网络连接或文章是否存在')
     router.push('/write')
   }

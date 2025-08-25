@@ -184,47 +184,32 @@ func (s *ArticleService) GetArticleList(req request.ArticleQueryRequest) ([]data
 
 // GetArticleByID 根据ID获取文章详情
 func (s *ArticleService) GetArticleByID(id uint, isAdmin bool, currentUserID uint) (database.Article, error) {
-	global.ZapLog.Info("开始获取文章详情", zap.Uint("articleID", id), zap.Bool("isAdmin", isAdmin), zap.Uint("currentUserID", currentUserID))
-
 	var article database.Article
 	if err := global.DB.Preload("Category").Preload("Author").Preload("Tags").Where("id = ?", id).First(&article).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			global.ZapLog.Error("文章不存在", zap.Uint("articleID", id))
 			return article, errors.New("文章不存在")
 		}
-		global.ZapLog.Error("数据库查询失败", zap.Uint("articleID", id), zap.Error(err))
 		return article, err
 	}
 
-	global.ZapLog.Info("文章查询成功", zap.Uint("articleID", id), zap.Uint("authorID", article.AuthorID), zap.Uint8("status", article.Status))
-
 	// 权限检查：未发布文章只能作者或管理员查看
 	if article.Status != 1 {
-		global.ZapLog.Info("文章未发布，进行权限检查", zap.Uint8("status", article.Status))
 		// 如果是管理员，允许访问
 		if isAdmin {
-			global.ZapLog.Info("管理员权限，允许访问")
 			// 允许访问
 		} else if currentUserID == 0 {
 			// 未登录用户，拒绝访问草稿文章
-			global.ZapLog.Error("未登录用户尝试访问草稿文章", zap.Uint("articleID", id))
 			return article, errors.New("无权访问此文章")
 		} else if article.AuthorID != currentUserID {
 			// 非作者用户，拒绝访问草稿文章
-			global.ZapLog.Error("非作者用户尝试访问草稿文章", zap.Uint("articleID", id), zap.Uint("currentUserID", currentUserID), zap.Uint("authorID", article.AuthorID))
 			return article, errors.New("无权访问此文章")
-		} else {
-			global.ZapLog.Info("作者访问自己的草稿文章，允许访问")
 		}
 		// 作者访问自己的草稿文章，允许访问
-	} else {
-		global.ZapLog.Info("文章已发布，允许访问")
 	}
 
 	// 异步增加阅读量
 	go s.IncrementViewCount(id)
 
-	global.ZapLog.Info("文章详情获取成功", zap.Uint("articleID", id))
 	return article, nil
 }
 
@@ -424,11 +409,6 @@ func (s *ArticleService) cleanupOrphanTags(tx *gorm.DB, tagIDs []uint) error {
 
 // handleArticleTags 处理文章与标签的关联关系（支持ID和名称）
 func (s *ArticleService) handleArticleTags(tx *gorm.DB, articleID uint, tagIDs []uint, tagNames []string) error {
-	global.ZapLog.Info("开始处理文章标签",
-		zap.Uint("articleID", articleID),
-		zap.Any("tagIDs", tagIDs),
-		zap.Any("tagNames", tagNames))
-
 	// 合并标签ID和通过名称获取的ID
 	var allTagIDs []uint
 
@@ -451,50 +431,33 @@ func (s *ArticleService) handleArticleTags(tx *gorm.DB, articleID uint, tagIDs [
 				continue
 			}
 
-			global.ZapLog.Info("处理标签名称", zap.String("tagName", tagName))
-
 			var tag database.Tag
 			// 先尝试查找现有标签（包括软删除的）
 			if err := tx.Unscoped().Where("name = ?", tagName).First(&tag).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					// 标签不存在，创建新标签
-					global.ZapLog.Info("创建新标签", zap.String("tagName", tagName))
 					tag = database.Tag{
 						Name: tagName,
 						Slug: generateSlug(tagName),
 					}
 					if err := tx.Create(&tag).Error; err != nil {
-						global.ZapLog.Error("创建标签失败",
-							zap.String("tagName", tagName),
-							zap.Error(err))
 						return errors.New("创建标签失败: " + err.Error())
 					}
-					global.ZapLog.Info("标签创建成功", zap.String("tagName", tagName), zap.Uint("tagID", tag.ID))
 				} else {
-					global.ZapLog.Error("查询标签失败",
-						zap.String("tagName", tagName),
-						zap.Error(err))
 					return errors.New("查询标签失败: " + err.Error())
 				}
 			} else {
 				// 如果标签被软删除了，恢复它
 				if tag.DeletedAt.Valid {
-					global.ZapLog.Info("恢复软删除的标签", zap.String("tagName", tagName), zap.Uint("tagID", tag.ID))
 					if err := tx.Unscoped().Model(&tag).Update("deleted_at", nil).Error; err != nil {
-						global.ZapLog.Error("恢复标签失败",
-							zap.String("tagName", tagName),
-							zap.Error(err))
 						return errors.New("恢复标签失败: " + err.Error())
 					}
 				}
-				global.ZapLog.Info("找到现有标签", zap.String("tagName", tagName), zap.Uint("tagID", tag.ID))
 			}
 
 			allTagIDs = append(allTagIDs, tag.ID)
 		}
 	}
-
-	global.ZapLog.Info("所有标签ID", zap.Any("allTagIDs", allTagIDs))
 
 	// 去重标签ID
 	uniqueTagIDs := make([]uint, 0, len(allTagIDs))
@@ -506,8 +469,6 @@ func (s *ArticleService) handleArticleTags(tx *gorm.DB, articleID uint, tagIDs [
 		}
 	}
 
-	global.ZapLog.Info("去重后的标签ID", zap.Any("uniqueTagIDs", uniqueTagIDs))
-
 	// 创建文章标签关联
 	if len(uniqueTagIDs) > 0 {
 		for _, tagID := range uniqueTagIDs {
@@ -518,16 +479,11 @@ func (s *ArticleService) handleArticleTags(tx *gorm.DB, articleID uint, tagIDs [
 			}
 
 			if err := tx.Where("article_id = ? AND tag_id = ?", articleID, tagID).FirstOrCreate(&articleTag).Error; err != nil {
-				global.ZapLog.Error("创建文章标签关联失败",
-					zap.Uint("articleID", articleID),
-					zap.Uint("tagID", tagID),
-					zap.Error(err))
 				return errors.New("创建文章标签关联失败: " + err.Error())
 			}
 		}
 	}
 
-	global.ZapLog.Info("文章标签处理完成", zap.Uint("articleID", articleID))
 	return nil
 }
 
