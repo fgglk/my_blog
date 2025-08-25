@@ -369,11 +369,10 @@ import { useUserStore } from '@/stores/user'
 import { useArticleStore } from '@/stores/article'
 import { userApi } from '@/api/user'
 import { articleApi } from '@/api/article'
-import { imageApi } from '@/api/image'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Camera, Edit, Lock, Document, View, Star, ChatDotRound, Plus, 
-  ArrowRight, Delete, Collection, EditPen, UserFilled, Picture, Check
+  ArrowRight, Delete, Collection, EditPen, UserFilled, Picture
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import type { Article } from '@/types/article'

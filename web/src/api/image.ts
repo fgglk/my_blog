@@ -20,18 +20,42 @@ export const imageApi = {
     return request.delete(`/image/delete/${data.image_id}`)
   },
 
-  // 批量删除图片 - 后端没有批量删除接口，需要逐个删除
+  // 批量删除图片 - 改进错误处理
   deleteImages: async (imageIds: number[]): Promise<ApiResponse> => {
-    const promises = imageIds.map(id => 
-      request.delete(`/image/delete/${id}`)
-    )
-    const results = await Promise.all(promises)
-    // 检查是否所有删除都成功
-    const failedCount = results.filter(r => r.data.code !== 0).length
-    if (failedCount > 0) {
-      return { code: 1, msg: `${failedCount} 张图片删除失败`, data: null }
+    const results = []
+    const successIds = []
+    const failedIds = []
+    
+    // 逐个删除，避免 Promise.all 的快速失败问题
+    for (const id of imageIds) {
+      try {
+        const result: any = await request.delete(`/image/delete/${id}`)
+        // request工具已经通过响应拦截器处理，直接返回data部分
+        if (result.code === 0) {
+          successIds.push(id)
+          results.push({ id, success: true })
+        } else {
+          failedIds.push(id)
+          results.push({ id, success: false, error: result.msg })
+        }
+      } catch (error) {
+        failedIds.push(id)
+        results.push({ id, success: false, error: '网络错误' })
+      }
     }
-    return { code: 0, msg: '批量删除成功', data: null }
+    
+    // 返回详细的结果
+    if (failedIds.length === 0) {
+      return { code: 0, msg: `成功删除 ${successIds.length} 张图片`, data: { successIds, failedIds } }
+    } else if (successIds.length === 0) {
+      return { code: 1, msg: `删除失败，${failedIds.length} 张图片删除失败`, data: { successIds, failedIds } }
+    } else {
+      return { 
+        code: 1, 
+        msg: `部分删除成功，${successIds.length} 张删除成功，${failedIds.length} 张删除失败`, 
+        data: { successIds, failedIds } 
+      }
+    }
   },
 
   // 上传图片

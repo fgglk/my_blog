@@ -381,7 +381,7 @@ const handleDeleteImage = async (image: ImageInfo) => {
         selectedImages.value.splice(index, 1)
       }
       // 重新加载列表
-      loadImages()
+      await loadImages()
     } else {
       ElMessage.error(response.msg || '删除失败')
     }
@@ -411,11 +411,26 @@ const handleBatchDelete = async () => {
     const response = await imageApi.deleteImages(selectedImages.value)
     
     if (response.code === 0) {
-      ElMessage.success('批量删除成功')
+      // 全部删除成功
+      ElMessage.success(response.msg || '批量删除成功')
       selectedImages.value = []
-      loadImages()
+      await loadImages()
     } else {
-      ElMessage.error(response.msg || '批量删除失败')
+      // 部分删除成功或全部失败
+      if (response.data && response.data.successIds && response.data.successIds.length > 0) {
+        // 部分删除成功，从选中列表中移除已删除的图片
+        const successIds = response.data.successIds
+        selectedImages.value = selectedImages.value.filter(id => !successIds.includes(id))
+        
+        // 显示部分成功消息
+        ElMessage.warning(response.msg || '部分删除成功')
+        
+        // 重新加载列表以更新显示
+        await loadImages()
+      } else {
+        // 全部删除失败
+        ElMessage.error(response.msg || '批量删除失败')
+      }
     }
   } catch (error) {
     if (error !== 'cancel') {
