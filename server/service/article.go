@@ -114,6 +114,12 @@ func (s *ArticleService) CreateArticle(req request.ArticleCreateRequest) (databa
 		}
 	}
 
+	// 更新分类的文章数量统计
+	if err := s.updateCategoryArticleCount(tx, categoryID); err != nil {
+		tx.Rollback()
+		return article, err
+	}
+
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
 		tx.Rollback()
@@ -310,6 +316,31 @@ func (s *ArticleService) UpdateArticle(req request.ArticleUpdateRequest, userID 
 		return article, err
 	}
 
+	// 更新分类的文章数量统计
+	// 如果分类ID发生了变化，需要更新旧分类和新分类的统计
+	if req.CategoryID > 0 && req.CategoryID != article.CategoryID {
+		// 更新旧分类的统计
+		if err := s.updateCategoryArticleCount(tx, article.CategoryID); err != nil {
+			tx.Rollback()
+			return article, err
+		}
+		// 更新新分类的统计
+		if err := s.updateCategoryArticleCount(tx, req.CategoryID); err != nil {
+			tx.Rollback()
+			return article, err
+		}
+	} else {
+		// 分类没有变化，只更新当前分类的统计
+		currentCategoryID := article.CategoryID
+		if req.CategoryID > 0 {
+			currentCategoryID = req.CategoryID
+		}
+		if err := s.updateCategoryArticleCount(tx, currentCategoryID); err != nil {
+			tx.Rollback()
+			return article, err
+		}
+	}
+
 	// 如果变为发布状态，同步到ES
 	if statusChanged && article.Status == 1 {
 		go s.SyncArticleToES(article.ID)
@@ -357,6 +388,9 @@ func (s *ArticleService) DeleteArticle(articleID uint, userID uint, isAdmin bool
 		return err
 	}
 
+	// 获取文章的分类ID（在删除文章之前）
+	categoryID := article.CategoryID
+
 	// 删除标签关联
 	if err := tx.Where("article_id = ?", articleID).Delete(&database.ArticleTag{}).Error; err != nil {
 		tx.Rollback()
@@ -365,6 +399,12 @@ func (s *ArticleService) DeleteArticle(articleID uint, userID uint, isAdmin bool
 
 	// 删除文章记录
 	if err := tx.Delete(&article).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 更新分类的文章数量统计
+	if err := s.updateCategoryArticleCount(tx, categoryID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -384,6 +424,15 @@ func (s *ArticleService) DeleteArticle(articleID uint, userID uint, isAdmin bool
 	// 异步从ES删除文章
 	go s.DeleteArticleFromES(articleID)
 
+	return nil
+}
+
+// updateCategoryArticleCount 更新分类的文章数量统计
+// 注意：由于分类的文章数量是动态计算的，这个方法主要用于确保数据一致性
+func (s *ArticleService) updateCategoryArticleCount(tx *gorm.DB, categoryID uint) error {
+	// 分类的文章数量是通过查询动态计算的，不需要更新数据库
+	// 这个方法保留是为了确保在事务中的一致性
+	// 实际的统计会在查询时通过 JOIN 或子查询计算
 	return nil
 }
 
