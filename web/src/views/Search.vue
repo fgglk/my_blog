@@ -10,16 +10,34 @@
             </router-link>
           </div>
           <nav class="nav">
-            <router-link to="/" class="nav-item">首页</router-link>
-            <router-link to="/search" class="nav-item active">搜索</router-link>
+            <router-link to="/" class="nav-item">
+              <el-icon><House /></el-icon>
+              首页
+            </router-link>
+            <router-link to="/search" class="nav-item active">
+              <el-icon><Search /></el-icon>
+              搜索
+            </router-link>
             <template v-if="userStore.userInfo">
-              <router-link to="/write" class="nav-item">写文章</router-link>
-              <router-link to="/profile" class="nav-item">个人中心</router-link>
+              <router-link to="/write" class="nav-item">
+                <el-icon><Edit /></el-icon>
+                写文章
+              </router-link>
+              <router-link to="/profile" class="nav-item">
+                <el-icon><User /></el-icon>
+                个人中心
+              </router-link>
               <el-button @click="handleLogout" link>退出</el-button>
             </template>
             <template v-else>
-              <router-link to="/login" class="nav-item">登录</router-link>
-              <router-link to="/register" class="nav-item">注册</router-link>
+              <router-link to="/login" class="nav-item">
+                <el-icon><User /></el-icon>
+                登录
+              </router-link>
+              <router-link to="/register" class="nav-item">
+                <el-icon><UserFilled /></el-icon>
+                注册
+              </router-link>
             </template>
           </nav>
         </div>
@@ -112,47 +130,40 @@
                 <img :src="getArticleImage(article)" alt="文章配图" />
               </div>
               <div class="article-content">
-                <div class="article-header">
-                  <h3 class="article-title">{{ article.title }}</h3>
-                  <div class="article-meta">
-                    <el-tag size="small" type="primary">{{ getCategoryName(article.category_id) }}</el-tag>
-                    <span class="article-date">{{ formatDate(article.created_at) }}</span>
-                    <div class="article-author">
-                      <el-avatar :size="20" class="author-avatar">
-                        {{ getAuthorInitial(article.author_name || article.author_nickname) }}
-                      </el-avatar>
-                      <span class="author-name">{{ article.author_nickname || article.author_name }}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="article-summary">
-                  <p>{{ getArticleSummary(article.content || article.summary) }}</p>
-                </div>
-                <div class="article-footer">
-                  <div class="tags">
-                    <el-tag 
-                      v-for="tag in article.tags" 
-                      :key="tag" 
-                      size="small" 
-                      class="tag"
-                    >
-                      {{ tag }}
-                    </el-tag>
-                  </div>
-                  <div class="stats">
-                    <span class="stat">
+                <div class="article-meta">
+                  <el-tag size="small" type="primary">{{ getCategoryName(article.category_id) }}</el-tag>
+                  <span class="article-date">{{ formatDate(article.created_at) }}</span>
+                  <div class="article-stats">
+                    <span class="stat-item">
                       <el-icon><View /></el-icon>
-                      {{ article.view_count }} 阅读
+                      {{ article.view_count }} 浏览
                     </span>
-                    <span class="stat">
-                      <el-icon><Star /></el-icon>
-                      {{ article.like_count }} 点赞
-                    </span>
-                    <span class="stat">
+                    <span class="stat-item">
                       <el-icon><ChatDotRound /></el-icon>
                       {{ article.comment_count }} 评论
                     </span>
+                    <span class="stat-item">
+                      <el-icon><Star /></el-icon>
+                      {{ article.like_count }} 点赞
+                    </span>
+                    <span class="stat-item">
+                      <el-icon><Collection /></el-icon>
+                      {{ article.favorite_count || 0 }} 收藏
+                    </span>
                   </div>
+                </div>
+                <h3 class="article-title">{{ article.title }}</h3>
+                <p class="article-summary">{{ getArticleSummary(article.content || article.summary) }}</p>
+                <div class="article-footer">
+                  <div class="author">
+                    <el-avatar :size="24" :src="article.author_avatar">
+                      {{ getAuthorInitial(article.author_name || article.author_nickname) }}
+                    </el-avatar>
+                    <span>{{ article.author_nickname || article.author_name }}</span>
+                  </div>
+                  <span class="read-more" @click.stop="goToArticle(article.id)">
+                    阅读全文 →
+                  </span>
                 </div>
               </div>
             </article>
@@ -217,7 +228,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { 
-  Search, Document, User, Collection, View, Star, ChatDotRound
+  Search, Document, User, UserFilled, Collection, View, Star, ChatDotRound, House, Edit
 } from '@element-plus/icons-vue'
 import { getPlainTextSummary } from '@/utils/markdown'
 import dayjs from 'dayjs'
@@ -374,13 +385,12 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .search-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: #f8fafc;
 }
 
 .header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -390,45 +400,37 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px 0;
+  padding: 1rem 0;
 }
 
 .logo-link {
   text-decoration: none;
+  color: inherit;
   
   h1 {
-    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 24px;
-    font-weight: bold;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
   }
 }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: 20px;
-}
-
-.nav-item {
-  text-decoration: none;
-  color: #333;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  padding: 8px 16px;
-  border-radius: 20px;
+  gap: 2rem;
   
-  &:hover {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 0.1);
-  }
-  
-  &.active {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 0.1);
-    font-weight: bold;
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: #6b7280;
+    font-weight: 500;
+    transition: color 0.2s;
+    
+    &:hover {
+      color: #3b82f6;
+    }
   }
 }
 
@@ -496,23 +498,24 @@ onMounted(async () => {
 }
 
 .main {
-  padding: 40px 0;
+  padding: 2rem 0;
 }
 
 .search-results {
   .results-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 2rem;
     
     h2 {
-      font-size: 28px;
-      color: #333;
-      margin-bottom: 10px;
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      color: #1f2937;
     }
     
     p {
-      color: #666;
-      font-size: 16px;
+      color: #6b7280;
+      margin: 0;
     }
   }
   
@@ -525,23 +528,23 @@ onMounted(async () => {
 .article-list {
   .article-card {
     background: #fff;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     display: flex;
-    height: 200px;
+    height: 220px;
     
     &:hover {
       transform: translateY(-4px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
   }
   
   .article-image {
-    width: 280px;
+    width: 380px;
     flex-shrink: 0;
     overflow: hidden;
     
@@ -553,27 +556,55 @@ onMounted(async () => {
   }
   
   .article-content {
+    padding: 24px;
     flex: 1;
-    padding: 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    overflow: hidden;
   }
   
-  .article-header {
-    margin-bottom: 15px;
+  .article-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    
+    .article-date {
+      color: #666;
+      font-size: 12px;
+    }
+    
+    .article-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      
+      .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        color: #666;
+        font-size: 11px;
+        
+        .el-icon {
+          font-size: 12px;
+        }
+      }
+    }
   }
   
   .article-title {
-    font-size: 20px;
+    font-size: 21px;
     font-weight: bold;
     color: #333;
-    margin-bottom: 10px;
-    line-height: 1.4;
+    margin-bottom: 16px;
+    line-height: 1.3;
+    overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    overflow: hidden;
+    height: 55px;
     /* Standard properties for compatibility */
     display: -moz-box;
     -moz-box-orient: vertical;
@@ -582,50 +613,22 @@ onMounted(async () => {
     line-clamp: 2;
   }
   
-  .article-meta {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    font-size: 14px;
-    color: #666;
-    
-    .article-author {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-      
-      .author-avatar {
-        background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-        color: #fff;
-        font-weight: bold;
-        font-size: 12px;
-      }
-      
-      .author-name {
-        color: #3b82f6;
-        font-weight: 500;
-      }
-    }
-  }
-  
   .article-summary {
-    margin-bottom: 15px;
-    
-    p {
-      color: #666;
-      line-height: 1.6;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      /* Standard properties for compatibility */
-      display: -moz-box;
-      -moz-box-orient: vertical;
-      display: box;
-      box-orient: vertical;
-      line-clamp: 2;
-    }
+    color: #666;
+    line-height: 1.4;
+    margin-bottom: 18px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 16px;
+    height: 45px;
+    /* Standard properties for compatibility */
+    display: -moz-box;
+    -moz-box-orient: vertical;
+    display: box;
+    box-orient: vertical;
+    line-clamp: 2;
   }
   
   .article-footer {
@@ -634,26 +637,24 @@ onMounted(async () => {
     justify-content: space-between;
   }
   
-  .tags {
+  .author {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    color: #666;
+    font-size: 12px;
   }
   
-  .stats {
-    display: flex;
-    gap: 15px;
+  .read-more {
+    color: #409eff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
     
-    .stat {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      color: #999;
-      font-size: 14px;
-      
-      .el-icon {
-        font-size: 14px;
-      }
+    &:hover {
+      text-decoration: underline;
+      color: #337ecc;
     }
   }
 }
@@ -661,28 +662,29 @@ onMounted(async () => {
 .pagination {
   display: flex;
   justify-content: center;
-  margin-top: 40px;
+  margin-top: 2rem;
 }
 
 .search-tips {
   .tips-content {
     background: #fff;
-    border-radius: 20px;
-    padding: 50px;
+    border-radius: 0.75rem;
+    padding: 3rem 2rem;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     
     h2 {
-      font-size: 28px;
-      color: #333;
-      margin-bottom: 40px;
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 2rem 0;
+      color: #1f2937;
     }
   }
   
   .tips-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 30px;
+    gap: 1.5rem;
     max-width: 900px;
     margin: 0 auto;
   }
@@ -690,42 +692,42 @@ onMounted(async () => {
   .tip-item {
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding: 25px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    border: 1px solid rgba(59, 130, 246, 0.1);
-    transition: all 0.3s ease;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
     
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
     
     .tip-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 60px;
-      height: 60px;
+      width: 3rem;
+      height: 3rem;
       border-radius: 50%;
-      background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+      background: #3b82f6;
       color: #fff;
-      font-size: 24px;
+      font-size: 1.25rem;
     }
     
     .tip-content {
       text-align: left;
       
       h3 {
-        font-size: 18px;
-        color: #333;
-        margin-bottom: 8px;
-        font-weight: bold;
+        font-size: 1.125rem;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
       }
       
       p {
-        color: #666;
+        color: #6b7280;
         line-height: 1.6;
         margin: 0;
       }
@@ -754,17 +756,38 @@ onMounted(async () => {
   
   .article-card {
     flex-direction: column !important;
-    height: auto !important;
+    height: 260px !important;
   }
   
   .article-image {
     width: 100% !important;
-    height: 200px !important;
+    height: 120px !important;
+  }
+  
+  .article-content {
+    flex: 1;
+    padding: 12px;
+  }
+  
+  .article-title {
+    font-size: 16px;
+    height: auto;
+    -webkit-line-clamp: 2;
+    /* Standard properties for compatibility */
+    line-clamp: 2;
+  }
+  
+  .article-summary {
+    height: auto;
+    -webkit-line-clamp: 2;
+    /* Standard properties for compatibility */
+    line-clamp: 2;
+    font-size: 13px;
   }
   
   .tips-list {
     grid-template-columns: 1fr !important;
-    gap: 20px !important;
+    gap: 1rem !important;
   }
   
   .tip-item {

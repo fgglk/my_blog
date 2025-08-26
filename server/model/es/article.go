@@ -13,11 +13,13 @@ type ArticleES struct {
 	Title          string                `json:"title"`
 	Content        string                `json:"content"`
 	Summary        string                `json:"summary"`
+	CoverImage     string                `json:"cover_image"`
 	Tags           []string              `json:"tags"`
 	CategoryID     uint                  `json:"category_id"`
 	UserID         uint                  `json:"user_id"`
 	AuthorName     string                `json:"author_name"`     // 添加作者名字字段
 	AuthorNickname string                `json:"author_nickname"` // 添加作者昵称字段
+	AuthorAvatar   string                `json:"author_avatar"`
 	Status         appType.ArticleStatus `json:"status"`
 	ViewCount      int                   `json:"view_count"`
 	LikeCount      int                   `json:"like_count"`
@@ -44,11 +46,13 @@ func GetMapping() *types.TypeMapping {
 			},
 			"content":         types.TextProperty{},
 			"summary":         types.TextProperty{},
+			"cover_image":     types.KeywordProperty{},
 			"tags":            types.KeywordProperty{},
 			"category_id":     types.IntegerNumberProperty{},
 			"user_id":         types.IntegerNumberProperty{},
 			"author_name":     types.TextProperty{}, // 添加作者名字字段映射
 			"author_nickname": types.TextProperty{}, // 添加作者昵称字段映射
+			"author_avatar":   types.KeywordProperty{},
 			"status":          types.IntegerNumberProperty{},
 			"view_count":      types.IntegerNumberProperty{},
 			"like_count":      types.IntegerNumberProperty{},

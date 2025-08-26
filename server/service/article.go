@@ -550,6 +550,7 @@ func (s *ArticleService) SyncArticleToES(articleID uint) error {
 		Title:         article.Title,
 		Content:       article.Content,
 		Summary:       article.Summary,
+		CoverImage:    article.CoverImage,
 		CategoryID:    article.CategoryID,
 		UserID:        article.AuthorID,
 		Status:        appType.ArticleStatus(article.Status),
@@ -564,6 +565,7 @@ func (s *ArticleService) SyncArticleToES(articleID uint) error {
 	// 设置作者信息
 	esArticle.AuthorName = article.Author.Username
 	esArticle.AuthorNickname = article.Author.Nickname
+	esArticle.AuthorAvatar = article.Author.Avatar
 
 	// 提取标签名称
 	for _, tag := range article.Tags {
@@ -647,7 +649,7 @@ func generateSlug(title string) string {
 func (s *ArticleService) SyncArticleStatsToES(articleID uint) error {
 	// 获取完整文章信息（包括统计数据）
 	var article database.Article
-	if err := global.DB.Preload("Category").Preload("Tags").Where("id = ?", articleID).First(&article).Error; err != nil {
+	if err := global.DB.Preload("Category").Preload("Tags").Preload("Author").Where("id = ?", articleID).First(&article).Error; err != nil {
 		return err
 	}
 
@@ -657,6 +659,7 @@ func (s *ArticleService) SyncArticleStatsToES(articleID uint) error {
 		Title:         article.Title,
 		Content:       article.Content,
 		Summary:       article.Summary,
+		CoverImage:    article.CoverImage,
 		CategoryID:    article.CategoryID,
 		UserID:        article.AuthorID,
 		Status:        appType.ArticleStatus(article.Status),
@@ -668,6 +671,11 @@ func (s *ArticleService) SyncArticleStatsToES(articleID uint) error {
 		UpdatedAt:     article.UpdatedAt,
 	}
 
+	// 设置作者信息
+	esArticle.AuthorName = article.Author.Username
+	esArticle.AuthorNickname = article.Author.Nickname
+	esArticle.AuthorAvatar = article.Author.Avatar
+
 	// 提取标签名称
 	for _, tag := range article.Tags {
 		esArticle.Tags = append(esArticle.Tags, tag.Name)
@@ -678,16 +686,15 @@ func (s *ArticleService) SyncArticleStatsToES(articleID uint) error {
 	defer cancel()
 
 	_, err := global.ES.Index(esArticle.IndexName()).
-		Id(strconv.FormatUint(esArticle.ID, 10)).
+		Id(strconv.FormatUint(uint64(article.ID), 10)).
 		Document(esArticle).
 		Do(ctx)
 
 	if err != nil {
-		global.ZapLog.Error("同步文章统计数据到ES失败", zap.Uint("articleID", articleID), zap.Error(err))
+		global.ZapLog.Error("同步文章统计到ES失败", zap.Uint("articleID", articleID), zap.Error(err))
 		return err
 	}
 
-	global.ZapLog.Info("文章统计数据同步到ES成功", zap.Uint("articleID", articleID))
 	return nil
 }
 
@@ -1012,7 +1019,7 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 			From:  &from,                          // 传递指针
 			Size:  &size,                          // 传递指针
 		}).
-		SourceIncludes_("id", "title", "content", "summary", "category_id", "tags", "user_id", "author_name", "author_nickname", "status", "view_count", "comment_count", "like_count", "favorite_count", "created_at", "updated_at")
+		SourceIncludes_("id", "title", "content", "summary", "cover_image", "category_id", "tags", "user_id", "author_name", "author_nickname", "author_avatar", "status", "view_count", "comment_count", "like_count", "favorite_count", "created_at", "updated_at")
 
 	// 执行查询并处理响应
 	resp, err := searchQuery.Do(ctx)
