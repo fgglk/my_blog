@@ -198,12 +198,12 @@
           ref="uploadRef"
           :auto-upload="false"
           :on-change="handleFileChange"
-          :file-list="fileList"
           :limit="5"
           multiple
           drag
           accept="image/*"
           class="upload-area"
+          v-model:file-list="fileList"
         >
           <el-icon class="upload-icon"><Upload /></el-icon>
           <div class="upload-text">
