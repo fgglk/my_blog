@@ -325,6 +325,9 @@ const performSearch = async () => {
       params.category_id = selectedCategory.value
     }
     
+    // 添加调试日志
+    console.log('搜索参数:', params)
+    
     const response = await request.get('/articles/search', { params })
     
     searchResult.articles = response.data.articles || []

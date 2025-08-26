@@ -36,16 +36,6 @@ func (s *ArticleService) handleArticleCategory(tx *gorm.DB, categoryID uint) err
 	return nil
 }
 
-// handleArticleCategoryByName 按名称处理文章分类
-func (s *ArticleService) handleArticleCategoryByName(tx *gorm.DB, categoryName string) (uint, error) {
-	var category database.Category
-	// 查找分类
-	if err := tx.Where("name = ?", categoryName).First(&category).Error; err != nil {
-		return 0, errors.New("分类不存在: " + err.Error())
-	}
-	return category.ID, nil
-}
-
 // CreateArticle 创建文章
 func (s *ArticleService) CreateArticle(req request.ArticleCreateRequest) (database.Article, error) {
 	// 初始化文章结构体
@@ -429,7 +419,7 @@ func (s *ArticleService) DeleteArticle(articleID uint, userID uint, isAdmin bool
 
 // updateCategoryArticleCount 更新分类的文章数量统计
 // 注意：由于分类的文章数量是动态计算的，这个方法主要用于确保数据一致性
-func (s *ArticleService) updateCategoryArticleCount(tx *gorm.DB, categoryID uint) error {
+func (s *ArticleService) updateCategoryArticleCount(_ *gorm.DB, _ uint) error {
 	// 分类的文章数量是通过查询动态计算的，不需要更新数据库
 	// 这个方法保留是为了确保在事务中的一致性
 	// 实际的统计会在查询时通过 JOIN 或子查询计算
@@ -996,15 +986,11 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 		sortField = "created_at"
 	}
 
-	// 使用枚举设置排序方向
-	var sortDirection string
-	sortDirection = "desc"
-	if req.Order == "asc" {
-		sortDirection = "asc"
-	}
-
-	// 构建排序字符串
-	sortStr := fmt.Sprintf("%s:%s", sortField, sortDirection)
+	// 添加调试日志
+	global.ZapLog.Info("搜索排序参数",
+		zap.String("sort", req.Sort),
+		zap.String("order", req.Order),
+		zap.String("sortField", sortField))
 
 	// 执行查询
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -1013,13 +999,20 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 	// 构建完整查询
 	searchQuery := global.ES.Search().
 		Index((&es.ArticleES{}).IndexName()).
-		Sort(sortStr).
 		Request(&search.Request{
 			Query: &types.Query{Bool: &boolQuery}, // 使用types.Query类型
 			From:  &from,                          // 传递指针
 			Size:  &size,                          // 传递指针
 		}).
 		SourceIncludes_("id", "title", "content", "summary", "cover_image", "category_id", "tags", "user_id", "author_name", "author_nickname", "author_avatar", "status", "view_count", "comment_count", "like_count", "favorite_count", "created_at", "updated_at")
+
+	// 添加查询调试日志
+	global.ZapLog.Info("ES查询详情",
+		zap.String("index", (&es.ArticleES{}).IndexName()),
+		zap.String("sortField", sortField),
+		zap.String("sortOrder", req.Order),
+		zap.Int("from", from),
+		zap.Int("size", size))
 
 	// 执行查询并处理响应
 	resp, err := searchQuery.Do(ctx)
