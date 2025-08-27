@@ -287,6 +287,15 @@ func (a *ArticleApi) SearchArticles(c *gin.Context) {
 		return
 	}
 
+	// 添加调试日志
+	global.ZapLog.Info("搜索API接收到的参数",
+		zap.String("keyword", req.Keyword),
+		zap.String("sort", req.Sort),
+		zap.String("order", req.Order),
+		zap.Uint("categoryID", req.CategoryID),
+		zap.Int("page", req.Page),
+		zap.Int("size", req.Size))
+
 	// 调用服务层搜索文章
 	result, err := articleService.SearchArticles(req)
 	if err != nil {

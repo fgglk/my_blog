@@ -101,4 +101,8 @@ export interface SearchArticlesParams {
   keyword: string
   page: number
   size: number
+  sort?: string
+  order?: string
+  category_id?: number
+  tag?: string
 } 

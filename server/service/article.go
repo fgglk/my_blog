@@ -1018,6 +1018,16 @@ func (s *ArticleService) searchFromES(req request.SearchArticleRequest) (es.Arti
 		}).
 		SourceIncludes_("id", "title", "content", "summary", "cover_image", "category_id", "tags", "user_id", "author_name", "author_nickname", "author_avatar", "status", "view_count", "comment_count", "like_count", "favorite_count", "created_at", "updated_at")
 
+	// 添加排序
+	if req.Sort != "" {
+		order := "desc"
+		if req.Order != "" {
+			order = req.Order
+		}
+		// 使用字符串形式的排序
+		searchQuery = searchQuery.Sort(sortField + ":" + order)
+	}
+
 	// 添加查询调试日志
 	global.ZapLog.Info("ES查询详情",
 		zap.String("index", (&es.ArticleES{}).IndexName()),
@@ -1062,42 +1072,42 @@ func (s *ArticleService) searchFromES(req request.SearchArticleRequest) (es.Arti
 func (s *ArticleService) searchFromMySQL(req request.SearchArticleRequest) (es.ArticleSearchResult, error) {
 	var articles []database.Article
 	var total int64
-	
-	global.ZapLog.Info("开始MySQL降级搜索", 
+
+	global.ZapLog.Info("开始MySQL降级搜索",
 		zap.String("keyword", req.Keyword),
 		zap.Uint("categoryID", req.CategoryID),
 		zap.String("tag", req.Tag))
-	
+
 	// 构建MySQL查询
 	query := global.DB.Model(&database.Article{}).Where("status = ?", 1)
-	
+
 	// 关键词搜索（多字段模糊查询）
 	if req.Keyword != "" {
-		query = query.Where("title LIKE ? OR content LIKE ? OR summary LIKE ?", 
+		query = query.Where("title LIKE ? OR content LIKE ? OR summary LIKE ?",
 			"%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%")
 	}
-	
+
 	// 分类筛选
 	if req.CategoryID > 0 {
 		query = query.Where("category_id = ?", req.CategoryID)
 	}
-	
+
 	// 标签筛选（通过关联表查询）
 	if req.Tag != "" {
 		query = query.Joins("JOIN article_tags ON articles.id = article_tags.article_id").
 			Joins("JOIN tags ON article_tags.tag_id = tags.id").
 			Where("tags.name = ?", req.Tag)
 	}
-	
+
 	// 统计总数
 	if err := query.Count(&total).Error; err != nil {
 		global.ZapLog.Error("MySQL搜索统计总数失败", zap.Error(err))
 		return es.ArticleSearchResult{}, err
 	}
-	
+
 	// 分页查询
 	offset := (req.Page - 1) * req.Size
-	
+
 	// 构建排序
 	var orderClause string
 	switch req.Sort {
@@ -1112,19 +1122,19 @@ func (s *ArticleService) searchFromMySQL(req request.SearchArticleRequest) (es.A
 	default:
 		orderClause = "created_at"
 	}
-	
+
 	if req.Order == "desc" {
 		orderClause += " DESC"
 	} else {
 		orderClause += " ASC"
 	}
-	
+
 	if err := query.Preload("Category").Preload("Author").Preload("Tags").
 		Offset(offset).Limit(req.Size).Order(orderClause).Find(&articles).Error; err != nil {
 		global.ZapLog.Error("MySQL搜索查询失败", zap.Error(err))
 		return es.ArticleSearchResult{}, err
 	}
-	
+
 	// 转换为ES结果格式
 	result := es.ArticleSearchResult{
 		Total:     total,
@@ -1132,18 +1142,18 @@ func (s *ArticleService) searchFromMySQL(req request.SearchArticleRequest) (es.A
 		Size:      req.Size,
 		TotalPage: (int(total) + req.Size - 1) / req.Size,
 	}
-	
+
 	// 转换文章数据
 	result.Articles = make([]es.ArticleES, 0, len(articles))
 	for _, article := range articles {
 		esArticle := s.convertToESArticle(article)
 		result.Articles = append(result.Articles, esArticle)
 	}
-	
-	global.ZapLog.Info("MySQL降级搜索完成", 
+
+	global.ZapLog.Info("MySQL降级搜索完成",
 		zap.Int64("total", total),
 		zap.Int("found", len(articles)))
-	
+
 	return result, nil
 }
 
@@ -1165,19 +1175,19 @@ func (s *ArticleService) convertToESArticle(article database.Article) es.Article
 		CreatedAt:     article.CreatedAt,
 		UpdatedAt:     article.UpdatedAt,
 	}
-	
+
 	// 设置作者信息
 	if article.Author.ID > 0 {
 		esArticle.AuthorName = article.Author.Username
 		esArticle.AuthorNickname = article.Author.Nickname
 		esArticle.AuthorAvatar = article.Author.Avatar
 	}
-	
+
 	// 提取标签名称
 	for _, tag := range article.Tags {
 		esArticle.Tags = append(esArticle.Tags, tag.Name)
 	}
-	
+
 	return esArticle
 }
 
