@@ -935,6 +935,18 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 		req.Size = 10
 	}
 
+	// 首先尝试ES搜索
+	result, err := s.searchFromES(req)
+	if err != nil {
+		global.ZapLog.Warn("ES搜索失败，降级到MySQL搜索", zap.Error(err))
+		// ES失败时降级到MySQL搜索
+		return s.searchFromMySQL(req)
+	}
+	return result, nil
+}
+
+// searchFromES 从Elasticsearch搜索文章
+func (s *ArticleService) searchFromES(req request.SearchArticleRequest) (es.ArticleSearchResult, error) {
 	// 构建查询条件 (使用types.Query结构体)
 	boolQuery := types.BoolQuery{}
 
@@ -987,7 +999,7 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 	}
 
 	// 添加调试日志
-	global.ZapLog.Info("搜索排序参数",
+	global.ZapLog.Info("ES搜索排序参数",
 		zap.String("sort", req.Sort),
 		zap.String("order", req.Order),
 		zap.String("sortField", sortField))
@@ -1044,6 +1056,129 @@ func (s *ArticleService) SearchArticles(req request.SearchArticleRequest) (es.Ar
 	}
 
 	return result, nil
+}
+
+// searchFromMySQL 从MySQL搜索文章（降级方案）
+func (s *ArticleService) searchFromMySQL(req request.SearchArticleRequest) (es.ArticleSearchResult, error) {
+	var articles []database.Article
+	var total int64
+	
+	global.ZapLog.Info("开始MySQL降级搜索", 
+		zap.String("keyword", req.Keyword),
+		zap.Uint("categoryID", req.CategoryID),
+		zap.String("tag", req.Tag))
+	
+	// 构建MySQL查询
+	query := global.DB.Model(&database.Article{}).Where("status = ?", 1)
+	
+	// 关键词搜索（多字段模糊查询）
+	if req.Keyword != "" {
+		query = query.Where("title LIKE ? OR content LIKE ? OR summary LIKE ?", 
+			"%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%")
+	}
+	
+	// 分类筛选
+	if req.CategoryID > 0 {
+		query = query.Where("category_id = ?", req.CategoryID)
+	}
+	
+	// 标签筛选（通过关联表查询）
+	if req.Tag != "" {
+		query = query.Joins("JOIN article_tags ON articles.id = article_tags.article_id").
+			Joins("JOIN tags ON article_tags.tag_id = tags.id").
+			Where("tags.name = ?", req.Tag)
+	}
+	
+	// 统计总数
+	if err := query.Count(&total).Error; err != nil {
+		global.ZapLog.Error("MySQL搜索统计总数失败", zap.Error(err))
+		return es.ArticleSearchResult{}, err
+	}
+	
+	// 分页查询
+	offset := (req.Page - 1) * req.Size
+	
+	// 构建排序
+	var orderClause string
+	switch req.Sort {
+	case "time":
+		orderClause = "created_at"
+	case "view":
+		orderClause = "view_count"
+	case "comment":
+		orderClause = "comment_count"
+	case "like":
+		orderClause = "like_count"
+	default:
+		orderClause = "created_at"
+	}
+	
+	if req.Order == "desc" {
+		orderClause += " DESC"
+	} else {
+		orderClause += " ASC"
+	}
+	
+	if err := query.Preload("Category").Preload("Author").Preload("Tags").
+		Offset(offset).Limit(req.Size).Order(orderClause).Find(&articles).Error; err != nil {
+		global.ZapLog.Error("MySQL搜索查询失败", zap.Error(err))
+		return es.ArticleSearchResult{}, err
+	}
+	
+	// 转换为ES结果格式
+	result := es.ArticleSearchResult{
+		Total:     total,
+		Page:      req.Page,
+		Size:      req.Size,
+		TotalPage: (int(total) + req.Size - 1) / req.Size,
+	}
+	
+	// 转换文章数据
+	result.Articles = make([]es.ArticleES, 0, len(articles))
+	for _, article := range articles {
+		esArticle := s.convertToESArticle(article)
+		result.Articles = append(result.Articles, esArticle)
+	}
+	
+	global.ZapLog.Info("MySQL降级搜索完成", 
+		zap.Int64("total", total),
+		zap.Int("found", len(articles)))
+	
+	return result, nil
+}
+
+// convertToESArticle 转换MySQL文章为ES文章格式
+func (s *ArticleService) convertToESArticle(article database.Article) es.ArticleES {
+	esArticle := es.ArticleES{
+		ID:            uint64(article.ID),
+		Title:         article.Title,
+		Content:       article.Content,
+		Summary:       article.Summary,
+		CoverImage:    article.CoverImage,
+		CategoryID:    article.CategoryID,
+		UserID:        article.AuthorID,
+		Status:        appType.ArticleStatus(article.Status),
+		ViewCount:     article.ViewCount,
+		LikeCount:     article.LikeCount,
+		CommentCount:  article.CommentCount,
+		FavoriteCount: article.FavoriteCount,
+		CreatedAt:     article.CreatedAt,
+		UpdatedAt:     article.UpdatedAt,
+	}
+	
+	// 设置作者信息
+	if article.Author.ID > 0 {
+		esArticle.AuthorName = article.Author.Username
+		esArticle.AuthorNickname = article.Author.Nickname
+		esArticle.AuthorAvatar = article.Author.Avatar
+	}
+	
+	// 提取标签名称
+	for _, tag := range article.Tags {
+		esArticle.Tags = append(esArticle.Tags, tag.Name)
+	}
+	
+	return esArticle
 }
 
 // SyncAllPublishedArticlesToES 同步所有已发布文章到ES

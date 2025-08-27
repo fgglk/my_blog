@@ -647,19 +647,55 @@ const tocItems = computed(() => {
   const headings: { id: string; text: string; level: number }[] = []
   const content = articleStore.currentArticle.content
   
-  // 简单的标题提取逻辑
-  const lines = content.split('\n')
-  lines.forEach((line) => {
+  // 使用更健壮的方法：先移除所有代码块，再提取标题
+  let processedContent = content
+  
+  // 移除所有代码块（包括 ``` 和 ~~~ 格式）
+  processedContent = processedContent.replace(/```[\s\S]*?```/g, '')
+  processedContent = processedContent.replace(/~~~[\s\S]*?~~~/g, '')
+  
+  // 移除缩进代码块（以4个空格或1个制表符开头的连续行）
+  const lines = processedContent.split('\n')
+  const filteredLines: string[] = []
+  let inIndentedBlock = false
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const isIndented = line.match(/^( {4}|\t)/)
+    
+    if (isIndented) {
+      if (!inIndentedBlock) {
+        inIndentedBlock = true
+      }
+      // 跳过缩进行
+      continue
+    } else {
+      if (inIndentedBlock) {
+        inIndentedBlock = false
+      }
+      filteredLines.push(line)
+    }
+  }
+  
+  // 从过滤后的内容中提取标题
+  filteredLines.forEach((line) => {
     const match = line.match(/^(#{1,6})\s+(.+)$/)
     if (match) {
       const level = match[1].length
       const text = match[2].trim()
+      
+      // 跳过空标题
+      if (!text) {
+        return
+      }
+      
       // 使用与标题ID相同的生成规则
       const id = text
         .toLowerCase()
         .replace(/[^\w\u4e00-\u9fa5]+/g, '-') // 替换非字母数字字符为连字符
         .replace(/^-+|-+$/g, '') // 移除首尾连字符
         .substring(0, 50) // 限制长度
+      
       headings.push({ id, text, level })
     }
   })
