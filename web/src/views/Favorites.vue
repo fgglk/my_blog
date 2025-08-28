@@ -132,10 +132,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Star, Document, View, ChatDotRound, Clock, Collection } from '@element-plus/icons-vue'
+import { Star, View, ChatDotRound, Clock, Collection } from '@element-plus/icons-vue'
 import { articleApi } from '@/api/article'
-import { categoryApi } from '@/api/category'
-import type { Favorite, Category } from '@/types/api'
+import { categoryApi, type Category } from '@/api/category'
+import type { Favorite } from '@/types/api'
 import { getPlainTextSummary } from '@/utils/markdown'
 
 const router = useRouter()
