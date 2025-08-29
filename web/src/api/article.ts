@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { ApiResponse, LikeResponse, FavoriteResponse } from '@/types/api'
+import type { ApiResponse, LikeResponse, FavoriteResponse, FavoriteListResponse } from '@/types/api'
 import type { 
   Article, 
   ArticleListResponse, 
