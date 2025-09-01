@@ -1018,14 +1018,34 @@ func (s *ArticleService) searchFromES(req request.SearchArticleRequest) (es.Arti
 		}).
 		SourceIncludes_("id", "title", "content", "summary", "cover_image", "category_id", "tags", "user_id", "author_name", "author_nickname", "author_avatar", "status", "view_count", "comment_count", "like_count", "favorite_count", "created_at", "updated_at")
 
+	// 添加查询构建调试日志
+	global.ZapLog.Info("ES查询构建详情",
+		zap.String("index", (&es.ArticleES{}).IndexName()),
+		zap.Any("boolQuery", boolQuery),
+		zap.Int("from", from),
+		zap.Int("size", size))
+
 	// 添加排序
 	if req.Sort != "" {
 		order := "desc"
 		if req.Order != "" {
 			order = req.Order
 		}
-		// 使用字符串形式的排序
-		searchQuery = searchQuery.Sort(sortField + ":" + order)
+
+		// 使用ES 8.x的排序语法
+		// 对于数字字段，使用字段名进行排序
+		if req.Sort == "view" || req.Sort == "comment" || req.Sort == "like" {
+			// 数字字段排序
+			searchQuery = searchQuery.Sort(sortField, &types.SortOptions{})
+		} else {
+			// 日期字段排序
+			searchQuery = searchQuery.Sort(sortField, &types.SortOptions{})
+		}
+
+		// 添加排序调试日志
+		global.ZapLog.Info("ES排序设置",
+			zap.String("sortField", sortField),
+			zap.String("order", order))
 	}
 
 	// 添加查询调试日志
@@ -1079,12 +1099,13 @@ func (s *ArticleService) searchFromMySQL(req request.SearchArticleRequest) (es.A
 		zap.String("tag", req.Tag))
 
 	// 构建MySQL查询
-	query := global.DB.Model(&database.Article{}).Where("status = ?", 1)
+	query := global.DB.Model(&database.Article{}).Where("articles.status = ?", 1)
 
-	// 关键词搜索（多字段模糊查询）
+	// 关键词搜索（多字段模糊查询，包括作者名称）
 	if req.Keyword != "" {
-		query = query.Where("title LIKE ? OR content LIKE ? OR summary LIKE ?",
-			"%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%")
+		query = query.Joins("JOIN users ON articles.author_id = users.id").
+			Where("articles.title LIKE ? OR articles.content LIKE ? OR articles.summary LIKE ? OR users.username LIKE ? OR users.nickname LIKE ?",
+				"%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%")
 	}
 
 	// 分类筛选
