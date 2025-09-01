@@ -533,7 +533,7 @@ import { categoryApi } from '@/api/category'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Category, ReadingSettings } from '@/types/article'
-import MarkdownIt from 'markdown-it'
+import { renderMarkdown } from '@/utils/markdown'
 import {
   House, Search, Edit, ArrowDown, Link, Message, Collection,
   Refresh, InfoFilled, Upload, Promotion, View,
@@ -550,12 +550,7 @@ const articleFormRef = ref<FormInstance>()
 const saving = ref(false)
 const publishing = ref(false)
 
-// Markdown渲染器
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true
-})
+// 使用统一的Markdown渲染器
 
 // 判断是否为编辑模式
 const isEdit = computed(() => {
@@ -1032,8 +1027,8 @@ const previewArticle = () => {
     return
   }
   
-  // 渲染Markdown内容
-  previewContent.value = md.render(articleForm.content)
+  // 使用统一的Markdown渲染函数
+  previewContent.value = renderMarkdown(articleForm.content)
   previewDialogVisible.value = true
 }
 
@@ -1085,7 +1080,35 @@ onMounted(() => {
   loadCategories()
   loadArticle()
   document.addEventListener('keydown', handleKeydown)
+  
+  // 添加全局复制代码函数
+  ;(window as any).copyCode = function(button: HTMLElement) {
+    const codeBlock = button.closest('.code-block')
+    if (codeBlock) {
+      const codeContent = codeBlock.querySelector('.code-content')
+      if (codeContent) {
+        const textContent = codeContent.textContent || ''
+        navigator.clipboard.writeText(textContent).then(() => {
+          // 临时改变按钮文本
+          const originalText = button.textContent
+          button.textContent = '已复制!'
+          button.style.backgroundColor = '#67c23a'
+          button.style.color = 'white'
+          
+          setTimeout(() => {
+            button.textContent = originalText
+            button.style.backgroundColor = ''
+            button.style.color = ''
+          }, 2000)
+        }).catch(() => {
+          ElMessage.error('复制失败')
+        })
+      }
+    }
+  }
 })
+
+
 
 // 在组件卸载时移除事件监听
 onUnmounted(() => {
@@ -1720,6 +1743,77 @@ onUnmounted(() => {
   line-height: 1.8;
   color: #333;
   font-size: 16px;
+  
+  // 代码块样式
+  .code-block {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin: 20px 0;
+    overflow: hidden;
+    
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #e9ecef;
+      border-bottom: 1px solid #dee2e6;
+      
+      .language-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #495057;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .copy-btn {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          background: #5a6268;
+          transform: translateY(-1px);
+        }
+      }
+    }
+    
+    .code-content {
+      padding: 16px;
+      background: #f8f9fa;
+      overflow-x: auto;
+      
+      .code-line {
+        display: flex;
+        align-items: center;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        
+        .line-number {
+          color: #6c757d;
+          font-size: 12px;
+          min-width: 40px;
+          text-align: right;
+          padding-right: 16px;
+          user-select: none;
+        }
+        
+        .line-content {
+          color: #495057;
+          flex: 1;
+          white-space: pre;
+        }
+      }
+    }
+  }
   
   h1, h2, h3, h4, h5, h6 {
     color: #1a1a1a;
