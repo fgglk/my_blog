@@ -1032,20 +1032,17 @@ func (s *ArticleService) searchFromES(req request.SearchArticleRequest) (es.Arti
 			order = req.Order
 		}
 
-		// 使用ES 8.x的排序语法
-		// 对于数字字段，使用字段名进行排序
-		if req.Sort == "view" || req.Sort == "comment" || req.Sort == "like" {
-			// 数字字段排序
-			searchQuery = searchQuery.Sort(sortField, &types.SortOptions{})
-		} else {
-			// 日期字段排序
-			searchQuery = searchQuery.Sort(sortField, &types.SortOptions{})
-		}
+		searchQuery = searchQuery.Sort(sortField, &types.SortOptions{})
 
 		// 添加排序调试日志
+		sortDirection := "升序"
+		if order == "desc" {
+			sortDirection = "降序"
+		}
 		global.ZapLog.Info("ES排序设置",
 			zap.String("sortField", sortField),
-			zap.String("order", order))
+			zap.String("order", order),
+			zap.String("sortDirection", sortDirection))
 	}
 
 	// 添加查询调试日志
